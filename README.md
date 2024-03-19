@@ -16,3 +16,5 @@ vscode sample project.
 */
 
 如果编译出错, 清空build目录,重编.
+a. 工程01,头文件包括,编译成功和调试.
+
