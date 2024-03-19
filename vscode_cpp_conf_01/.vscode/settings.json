@@ -1,0 +1,7 @@
+{
+    "go.toolsManagement.checkForUpdates": "off",
+    "cmake.generator": "MinGW Makefiles",
+    "cmake.platform": "",
+    "cmake.toolset": "",
+    "cmake.ctestPath": " C:\\Program Files\\CMake\\bin"
+}
