@@ -3,5 +3,5 @@
     "cmake.generator": "MinGW Makefiles",
     "cmake.platform": "",
     "cmake.toolset": "",
-    "cmake.ctestPath": " C:\\Program Files\\CMake\\bin"
+    "cmake.ctestPath": " C:\\Program Files\\cmake-3.27.5\\bin"
 }

@@ -6,9 +6,9 @@
 			"label": "CMake: build",
 			"command": "build",
 			"targets": [
-				"/Zi",
-				"/EHsc",
-				"/Fe:",
+				// "/Zi",
+				// "/EHsc",
+				// "/Fe:",
 				"${fileDirname}\\${fileBasenameNoExtension}.exe",
 				"${file}",
 				"all"
