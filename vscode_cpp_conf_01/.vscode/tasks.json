@@ -2,13 +2,20 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			/*
+			说说参数：cl是msvc的编译器，
+			/Zi 参数跟生成debug版本有关，
+			/EHsc跟异常处理模型有关，
+			/Fe指定生成后程序的文件名，
+			最后面跟的是源代码文件。
+			*/
 			"type": "cmake",
 			"label": "CMake: build",
 			"command": "build",
 			"targets": [
-				// "/Zi",
-				// "/EHsc",
-				// "/Fe:",
+				"/Zi", // debug
+				"/EHsc", // execption process
+				// "/Fe:", // 指定生成后程序的文件名
 				"${fileDirname}\\${fileBasenameNoExtension}.exe",
 				"${file}",
 				"all"
