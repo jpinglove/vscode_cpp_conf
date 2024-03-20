@@ -141,12 +141,14 @@ void func2(){
     double a = 0.0; 
     double b = 0.0;
     printf("input a for calculate sqrt as for (16,25,36,49,64,81):\n");
-    scanf("%d",&a);
-    b = cal_sqrt(a);
+    if(scanf("%lf",&a) == 1){
+        b = sqrt(a);
     printf("sqrt result store varible value b :%f\n",b);
-
-
+    } else {
+        printf("Invalid input. Please enter a valid number.\n");
+    }
 }
+
 
 int main(int argc, char** argv)
 {
