@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+		"type": "cmake",
+		"label": "CMake: build",
+		"command": "build",
+		"targets": [
+			// "/Zi", // debug
+			// "/EHsc", // execption process
+			// "/Fe:", // 指定生成后程序的文件名
+			// "${fileDirname}\\${fileBasenameNoExtension}.exe",
+			"${file}",
+			"all"
+		],
+		"group": "build",
+		"problemMatcher": [],
+		"detail": "CMake template build task"
+		}
+	]
+}
