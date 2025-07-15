@@ -1,0 +1,71 @@
+{
+    // "version" 字段指定了此文件遵循的 launch.json 格式版本。
+    // 这通常是 "0.2.0"，您一般不需要修改它。
+    "version": "0.2.0",
+
+    // "configurations" 是一个数组，其中包含了所有可用的调试配置。
+    // 您可以为不同的程序或不同的调试场景创建多个配置。
+    "configurations": [
+        {
+            // "name": 此调试配置的显示名称。它会出现在VS Code调试面板的下拉菜单中。
+            // 起一个有意义的名字，比如 "调试 sqrt_app (gdb)"。
+            "name": "Debug sqrt_app (gdb)",
+
+            // "type": 调试器的类型。对于 C/C++，通常是 "cppdbg"。
+            // 这个值由 C/C++ 扩展提供。
+            "type": "cppdbg",
+
+            // "request": 请求的类型。有两个主要选项：
+            // - "launch": VS Code 将启动您的程序，然后附加调试器。这是最常用的。
+            // - "attach": VS Code 会将调试器附加到一个已经正在运行的进程上。
+            "request": "launch",
+
+            // "program": 【最重要】要调试的可执行文件的【绝对路径】。
+            // `${workspaceFolder}` 是一个VS Code预定义变量，代表您项目文件夹的根目录。
+            // 所以，这里指向的是 "d:/.../cmake_01/build/sqrt_app.exe"。
+            "program": "${workspaceFolder}/build/sqrt_app.exe",
+
+            // "args": 一个字符串数组，代表在启动程序时传递给 main 函数的命令行参数。
+            // 例如: ["arg1", "arg2"] 对应 main(int argc, char* argv[]) 中的 argv[1] 和 argv[2]。
+            // 我们的程序目前不需要参数，所以是空数组。
+            "args": [],
+
+            // "stopAtEntry": 如果设置为 true，调试器会在程序入口点（main函数的第一行）自动暂停。
+            // 如果为 false，程序会一直运行，直到遇到第一个断点。
+            "stopAtEntry": false,
+
+            // "cwd": 程序启动时的当前工作目录（Current Working Directory）。
+            // 任何相对路径（如打开文件）都将基于此目录。
+            // 设置为构建目录是个好习惯，因为可执行文件通常在那里。
+            "cwd": "${workspaceFolder}/build",
+
+            // "environment": 为程序设置额外的环境变量。
+            // 例如: [{"name": "MY_ENV_VAR", "value": "123"}]
+            "environment": [],
+
+            // "externalConsole": 是否使用外部控制台窗口（如 Windows 的 cmd.exe）来运行程序。
+            // - true: 弹出一个新的黑窗口显示程序的 stdout/stdin/stderr。
+            // - false: 在 VS Code 的 "调试控制台" 内部显示输出。
+            "externalConsole": false,
+
+            // "MIMode": 指定要使用的调试器后端接口，代表 "Machine Interface Mode"。
+            // 对于 MinGW/GCC，我们使用 "gdb"。对于 Visual Studio，我们使用 "msvc"。
+            "MIMode": "gdb",
+
+            // "miDebuggerPath": 【重要】调试器程序（gdb.exe）的完整路径。
+            // VS Code 需要知道去哪里找到这个程序。
+            "miDebuggerPath": "D:/tools/mingw64/bin/gdb.exe",
+
+            // "setupCommands": 在调试会话开始时，发送给调试器的一系列命令。
+            // "-enable-pretty-printing" 是一个非常有用的 gdb 命令，它能让调试器以更可读的格式
+            // (比如展开 std::vector) 显示变量，而不是原始的内存结构。
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}
