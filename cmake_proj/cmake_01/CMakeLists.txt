@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.10) # 指定CMake的最低版本要求
 project(cmake01 VERSION 1.0 LANGUAGES CXX)
 
 set(SQRT_APP_NAME "sqrt_app")
+set(CALL_LIB_APP_NAME "call_lib")
 set(BUBBLE_APP_NAME "bubble_sorter")
 
 # 设置 C++ 标准为 C++17，并要求编译器必须支持。
@@ -23,7 +24,40 @@ endif()
 
 
 # =============================================================================
-# Target 1: sqrt_app
+# Library: mymath
+# 一个包含我们自定义数学函数的简单静态库
+# =============================================================================
+
+# 1. 使用 add_library 创建一个名为 'mymath' 的静态库(STATIC)。
+#    它的源文件是 src/b.cpp。
+add_library(mymath STATIC src/b.cpp)
+
+# 2. 为 mymath 库指定公开的(PUBLIC)头文件目录。
+#    这意味着任何链接到 mymath 的目标，都会自动获得这个头文件搜索路径。
+target_include_directories(mymath PUBLIC
+    "${PROJECT_SOURCE_DIR}/inc"
+)
+
+# 3. 为 mymath 库指定公开的(PUBLIC)链接依赖。
+#    因为 mymath 使用了 'sqrt' 函数，它需要链接到数学库 'm'。
+#    'PUBLIC' 关键字确保了任何链接到 mymath 的目标也会自动链接到 'm'。
+target_link_libraries(mymath PUBLIC m)
+
+
+# =============================================================================
+# Target 1: calllibapp
+# 使用 mymath 库来计算平方根的应用
+# =============================================================================
+
+add_executable(${CALL_LIB_APP_NAME} src/calllib.cpp)
+# 将可执行文件链接到我们的 mymath 库。
+# mymath 的头文件目录和对 'm' 库的链接会自动被传递过来。
+target_link_libraries(${CALL_LIB_APP_NAME} PRIVATE mymath)
+
+
+
+# =============================================================================
+# Target 2: sqrt_app
 # 计算平方根的应用
 # =============================================================================
 
@@ -46,6 +80,6 @@ target_include_directories(${SQRT_APP_NAME} PRIVATE
 target_link_libraries(${SQRT_APP_NAME} PRIVATE m)
 
 
-# --- 创建第二个可执行文件：用于冒泡排序 ---
+# --- 创建第3个可执行文件：用于冒泡排序 ---
 # 将 bubble_sort.cpp 编译成一个名为 bubble_sorter 的可执行文件
 add_executable(${BUBBLE_APP_NAME} src/bubble_sort.cpp)

@@ -23,7 +23,7 @@
             // "program": 【最重要】要调试的可执行文件的【绝对路径】。
             // `${workspaceFolder}` 是一个VS Code预定义变量，代表您项目文件夹的根目录。
             // 所以，这里指向的是 "d:/.../cmake_01/build/sqrt_app.exe"。
-            "program": "${workspaceFolder}/build/sqrt_app.exe",
+            "program": "${workspaceFolder}/build/call_lib.exe",
 
             // "args": 一个字符串数组，代表在启动程序时传递给 main 函数的命令行参数。
             // 例如: ["arg1", "arg2"] 对应 main(int argc, char* argv[]) 中的 argv[1] 和 argv[2]。
