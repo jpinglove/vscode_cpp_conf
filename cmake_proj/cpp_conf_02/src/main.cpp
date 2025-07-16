@@ -1,11 +1,7 @@
 #include <iostream>
 #include "../inc/Utils.h"
 
-/**
- *  test lib project.
- * 
- * 
- * /
+
 using namespace std;
 
 int main(int, char**){

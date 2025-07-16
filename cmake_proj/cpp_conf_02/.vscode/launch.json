@@ -1,34 +1,58 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
+            "name": "Debug mytest02 (gdb)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/${fileDirname}/${fileBasenameNoExtension}.exe",
+            // The program path is now in the 'bin' subdirectory of your build folder.
+            // Assumes your build folder is named 'build' at the root of the workspace.
+            "program": "${workspaceFolder}/build/bin/mytest02.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            // The working directory must be where the executable and the DLL are located.
+            "cwd": "${workspaceFolder}/build/bin",
             "environment": [],
+            // Set to true because your program uses std::cin for console input.
             "externalConsole": false,
             "MIMode": "gdb",
-            "miDebuggerPath": "D:/tools/mingw64/bin/gdb.exe",
-            "preLaunchTask": "build",
+            // Make sure this path points to your gdb.exe.
+            "miDebuggerPath": "C:/Program Files/mingw64/bin/gdb.exe",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
                 }
-            ]
+            ],
+            // This task will run 'cmake --build' before starting the debugger.
+            // This requires the VS Code "CMake Tools" extension.
+            "preLaunchTask": "CMake: build"
+        }
+    ],
+    "tasks": [
+        {
+            "label": "CMake: build",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "${workspaceFolder}/build",
+                "--target",
+                "all",
+                "--config",
+                "Debug",
+                "--",
+                "/m"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Generated task by CMake Tools extension."
         }
     ]
 }

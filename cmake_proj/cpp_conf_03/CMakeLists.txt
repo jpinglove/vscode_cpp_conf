@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 3.0.0)
-project(mytest02 VERSION 0.1.0 LANGUAGES C CXX)
+
+cmake_minimum_required(VERSION 3.10)
+
+project(mytest03 VERSION 0.1.0 LANGUAGES C CXX)
 
 #cmakedefine USE_MYMATH
 
@@ -17,7 +19,7 @@ aux_source_directory(src MY_CUSTOM_SRC_FILES_DIR)
 SET(CUSTOM_VARIABLE_SOURCES_CODE_FILES
     ${MY_CUSTOM_SRC_FILES_DIR}
 )
-set(PROGRAMME mytest02)
+set(PROGRAMME mytest03)
 
 add_executable(${PROGRAMME} ${CUSTOM_VARIABLE_SOURCES_CODE_FILES})
 

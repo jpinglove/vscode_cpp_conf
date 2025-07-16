@@ -2,34 +2,50 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
-//  this is lib code
-#ifdef cplusplus
-#define EX_C_CPP extern "C"
+// For exporting symbols from a DLL on Windows (works with MSVC and MinGW)
+#if defined(_WIN32) || defined(__CYGWIN__)
+  #ifdef TESTLIB_EXPORTS // This is defined when building the DLL
+    #ifdef __GNUC__
+      #define UTILS_API __attribute__((dllexport))
+    #else
+      #define UTILS_API __declspec(dllexport)
+    #endif
+  #else // This is defined when using the DLL
+    #ifdef __GNUC__
+      #define UTILS_API __attribute__((dllimport))
+    #else
+      #define UTILS_API __declspec(dllimport)
+    #endif
+  #endif
 #else
-#define EX_C_CPP extern
+    #define UTILS_API
 #endif
 
-#include <stdio.h>
+// For C-style linkage of individual functions
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-using namespace std;
+UTILS_API int add(int a,int b);
 
-EX_C_CPP int add(int a,int b);
+#ifdef __cplusplus
+}
+#endif
 
+#include <string>
+#include <cstdlib> // For rand()
 
-EX_C_CPP class Utils
+class UTILS_API Utils
 {
 private:
-    /* data */
     int num;
 public:
-    Utils(/* args */) { num = rand()%100; }
+    Utils() { num = rand()%100; }
     ~Utils() {}
     int getNum(){ return num;}
     int multiply(int a,int b);
-    void show(string s);
+    void show(const std::string& s);
     void show(int n);
-
 };
-
 
 #endif

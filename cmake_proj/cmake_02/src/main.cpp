@@ -1,0 +1,20 @@
+#include <iostream>
+#include "CTest.h" // 包含CTest类的头文件
+
+int main() {
+    std::cout << "[MAIN] Program starting." << std::endl;
+    std::cout << "[MAIN] Creating an instance of CTest." << std::endl;
+
+    // 创建CTest类的实例
+    CTest myTest;
+
+    std::cout << "[MAIN] CTest instance created. Calling run()." << std::endl;
+
+    // 执行测试
+    myTest.run();
+
+    std::cout << "[MAIN] run() finished." << std::endl;
+    std::cout << "[MAIN] Program ending. CTest instance will be destroyed now as it goes out of scope." << std::endl;
+
+    return 0;
+}

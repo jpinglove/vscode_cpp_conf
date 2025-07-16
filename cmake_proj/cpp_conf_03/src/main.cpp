@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../inc/Utils.h"
+#include "Utils.h"
 
 using namespace std;
 
