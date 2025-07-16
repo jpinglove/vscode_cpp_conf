@@ -14,6 +14,7 @@ int main() {
     myTest.run();
 
     std::cout << "[MAIN] run() finished." << std::endl;
+    myTest.doTheMath();
     std::cout << "[MAIN] Program ending. CTest instance will be destroyed now as it goes out of scope." << std::endl;
 
     return 0;

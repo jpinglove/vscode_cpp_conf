@@ -12,6 +12,8 @@ public:
 
     // 一个调用库的成员函数
     void run();
+
+    void doTheMath();
 };
 
 #endif // CTEST_H
