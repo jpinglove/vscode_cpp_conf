@@ -30,13 +30,24 @@ target_include_directories(mylibrary PUBLIC
 #    'PUBLIC' 关键字确保了任何链接到 mymath 的目标也会自动链接到 'm'。
 target_link_libraries(mylibrary PUBLIC m)
 
+
 # =============================================================================
+# 创建可执行文件
+
 # 添加头文件目录, 这样 #include "header.h" 才能找到 inc/header.h
 include_directories(inc)
 
 # 查找所有源文件
-file(GLOB SOURCES "src/*.cpp")
+# file(GLOB SOURCES "src/*.cpp")
 
-# 添加可执行文件，并链接所有源文件
-add_executable(${CMAKE_APP_NAME} ${SOURCES})
+# 推荐的做法是明确列出所有源文件，而不是使用 file(GLOB)。
+# 这样可以避免因未重新配置CMake而导致新文件被忽略的问题。
+add_executable(${CMAKE_APP_NAME}
+    src/main.cpp
+    src/CTest.cpp
+    src/Cplusfeature17.cpp
+)
 
+# 将可执行文件链接到我们创建的库'mylibrary'。
+# 这会自动处理'mylibrary'的依赖项和PUBLIC头文件目录。
+target_link_libraries(${CMAKE_APP_NAME} PRIVATE mylibrary)

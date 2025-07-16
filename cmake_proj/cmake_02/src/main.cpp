@@ -1,5 +1,6 @@
 #include <iostream>
 #include "CTest.h" // 包含CTest类的头文件
+#include "Cplusfeature17.h"
 
 int main() {
     std::cout << "[MAIN] Program starting." << std::endl;
@@ -16,6 +17,11 @@ int main() {
     std::cout << "[MAIN] run() finished." << std::endl;
     myTest.doTheMath();
     std::cout << "[MAIN] Program ending. CTest instance will be destroyed now as it goes out of scope." << std::endl;
+
+    // Test C++17 features
+    Cplusfeature17 cpp17Features;
+    cpp17Features.runSamples();
+
 
     return 0;
 }
