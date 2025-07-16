@@ -22,6 +22,10 @@ int main() {
     Cplusfeature17 cpp17Features;
     cpp17Features.runSamples();
 
+    // Pause the console to see output
+    std::cout << "\nPress Enter to continue..." << std::endl;
+    std::cin.ignore(); // Clears the buffer of any leftover characters (like newline from previous input)
+    std::cin.get();    // Waits for user to press Enter
 
     return 0;
 }
