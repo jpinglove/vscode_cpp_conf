@@ -1,0 +1,29 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            // tasks.json 中生成的程序路径
+            "program": "${fileDirname}\\${fileBasenameNoExtension}.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            // GDB 调试器的路径，需要根据您的 MinGW 安装路径进行调整
+            "miDebuggerPath": "C:\\Program Files\\mingw64\\bin\\gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            // 在启动调试前，执行 tasks.json 中定义的默认构建任务
+            "preLaunchTask": "C/C++: gcc.exe build active file"
+        }
+    ]
+}
