@@ -105,7 +105,7 @@ void commandMenuInit()
 
     ShortcutKey* pSk = new ShortcutKey();
 	pSk->_isCtrl = true;
-	pSk->_isShift = true;
+	pSk->_isShift = false;
 	pSk->_isAlt = true;
 	pSk->_key = 'T';
 
