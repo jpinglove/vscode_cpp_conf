@@ -1,7 +1,0 @@
-EXPORTS
-    isUnicode
-    setInfo
-    getFuncsArray
-    beNotified
-    messageProc
-    getName
