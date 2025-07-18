@@ -105,7 +105,7 @@ void commandMenuInit()
 
     ShortcutKey* pSk = new ShortcutKey();
 	pSk->_isCtrl = true;
-	pSk->_isShift = false;
+	pSk->_isShift = true;
 	pSk->_isAlt = true;
 	pSk->_key = 'T';
 
@@ -170,23 +170,6 @@ void helloDlg()
     ::MessageBox(NULL, TEXT("Hello, Notepad++!"), TEXT("Notepad++ Plugin Template"), MB_OK);
 }
 
-/*
-// URL编码函数
-std::wstring UrlEncode(const std::wstring& str)
-{
-	wchar_t* encoded = new wchar_t[str.length() * 3 + 1];
-	DWORD size = (DWORD)(str.length() * 3 + 1);
-	HRESULT hr = UrlEscape(str.c_str(), encoded, &size, 0);
-	std::wstring result;
-	if (SUCCEEDED(hr))
-	{
-		result = encoded;
-	}
-	delete[] encoded;
-	return result;
-}
-*/
-
 // ============================================================================
 //   *** 新增部分 1: Notepad++ 编码到 Windows 代码页的映射函数 ***
 //
@@ -214,47 +197,6 @@ int mapNppEncodingToWindowsCodepage(int nppEncoding)
 		return GetACP();
 	}
 }
-
-std::wstring utf8ToWString(const std::string& str)
-{
-	int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), NULL, 0);
-	std::wstring wstr(len, L'\0');
-	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), &wstr[0], len);
-	return wstr;
-}
-
-std::wstring gbkToWstring(const std::string& str)
-{
-	int len = MultiByteToWideChar(936 /*GBK*/, 0, str.c_str(), (int)str.length(), NULL, 0);
-	if (len == 0) return L"";
-	std::wstring result(len, 0);
-	MultiByteToWideChar(936 /*GBK*/, 0, str.c_str(), (int)str.length(), &result[0], len);
-	return result;
-}
-
-/*
-std::string urlEncode(const std::string& str)
-{
-	std::ostringstream escaped;
-	escaped.fill('0');
-	escaped << std::hex;
-
-	for (char c : str)
-	{
-		if (isalnum((unsigned char)c) || c == '-' || c == '_' || c == '.' || c == '~')
-		{
-			escaped << c;
-		}
-		else
-		{
-			escaped << '%' << std::uppercase << std::setw(2)
-				<< int((unsigned char)c) << std::nouppercase;
-		}
-	}
-
-	return escaped.str();
-}
-*/
 
 std::wstring urlEncodeW(const std::wstring& wstr)
 {
@@ -309,36 +251,6 @@ std::string convertStringEncoding(const std::string& input, int sourceCodepage, 
 
 	std::vector<char> mbbuffer(mblen);
 	WideCharToMultiByte(destCodepage, 0, wbuffer.data(), -1, mbbuffer.data(), mblen, NULL, NULL);
-
-	return std::string(mbbuffer.data());
-}
-
-// ============================================================================
-//   *** 新增部分 1: 智能编码转换函数 ***
-//
-//   将输入的UTF-8字符串转换为目标编码页(codepage)的字符串
-//   如果目标是UTF-8，则直接返回；否则进行转换。
-// ============================================================================
-std::string convertUtf8ToTargetEncoding(const std::string& utf8String, int targetCodepage)
-{
-	// 如果目标编码已经是UTF-8 (codepage 65001)，则无需转换
-	if (targetCodepage == CP_UTF8 || utf8String.empty()) {
-		return utf8String;
-	}
-
-	// 步骤1: 将源 UTF-8 字符串转换为宽字节字符串 (UTF-16)
-	int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8String.c_str(), -1, NULL, 0);
-	if (wlen == 0) return "";
-
-	std::vector<wchar_t> wbuffer(wlen);
-	MultiByteToWideChar(CP_UTF8, 0, utf8String.c_str(), -1, wbuffer.data(), wlen);
-
-	// 步骤2: 将宽字节字符串 (UTF-16) 转换为目标编码页的字符串
-	int mblen = WideCharToMultiByte(targetCodepage, 0, wbuffer.data(), -1, NULL, 0, NULL, NULL);
-	if (mblen == 0) return "";
-
-	std::vector<char> mbbuffer(mblen);
-	WideCharToMultiByte(targetCodepage, 0, wbuffer.data(), -1, mbbuffer.data(), mblen, NULL, NULL);
 
 	return std::string(mbbuffer.data());
 }
@@ -425,7 +337,6 @@ ProxyInfo getNppUpdaterProxySettings() {
 	return proxy;
 }
 
-
 // WinINET HTTP GET 函数
 std::string httpGetWithProxy(const std::wstring& url, const ProxyInfo& proxy) {
 	HINTERNET hInternet = NULL, hConnect = NULL;
@@ -505,7 +416,6 @@ std::string httpGetWithProxy(const std::wstring& url, const ProxyInfo& proxy) {
 
 	return result;
 }
-
 
 
 // ============================================================================
@@ -604,154 +514,77 @@ void translateSelection()
 }
 
 
+std::wstring utf8ToWString(const std::string& str)
+{
+	int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), NULL, 0);
+	std::wstring wstr(len, L'\0');
+	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), &wstr[0], len);
+	return wstr;
+}
+
+std::wstring gbkToWstring(const std::string& str)
+{
+	int len = MultiByteToWideChar(936 /*GBK*/, 0, str.c_str(), (int)str.length(), NULL, 0);
+	if (len == 0) return L"";
+	std::wstring result(len, 0);
+	MultiByteToWideChar(936 /*GBK*/, 0, str.c_str(), (int)str.length(), &result[0], len);
+	return result;
+}
+
 /*
-void translateSelection() {
-	HWND hCurrentScintilla = nppData._scintillaMainHandle;
-	intptr_t selLength = ::SendMessage(hCurrentScintilla, SCI_GETSELTEXT, 0, 0);
-	if (selLength <= 1) return;
+std::string urlEncode(const std::string& str)
+{
+	std::ostringstream escaped;
+	escaped.fill('0');
+	escaped << std::hex;
 
-	LPARAM currentBufferID = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
-	DWORD currentEncoding = (DWORD)::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, (WPARAM)currentBufferID, 0);
+	for (char c : str)
+	{
+		if (isalnum((unsigned char)c) || c == '-' || c == '_' || c == '.' || c == '~')
+		{
+			escaped << c;
+		}
+		else
+		{
+			escaped << '%' << std::uppercase << std::setw(2)
+				<< int((unsigned char)c) << std::nouppercase;
+		}
+	}
 
-	std::vector<char> buffer(selLength);
-	::SendMessage(hCurrentScintilla, SCI_GETSELTEXT, 0, (LPARAM)buffer.data());
-	std::string selectedText(buffer.data());
+	return escaped.str();
+}
+*/
 
-	// ============================================================================
-	//   *** 问题修复点 ***
-	//
-	//   将从 Scintilla 获取的文本从 UTF-8 转换为宽字节 (UTF-16)
-	//   旧代码错误地使用了 CP_ACP (系统默认编码)，现在修正为 CP_UTF8。
-	//   这是解决所有乱码问题的关键。
-	// ============================================================================
-	int wlen = MultiByteToWideChar(CP_UTF8, 0, selectedText.c_str(), -1, NULL, 0); // 使用 CP_UTF8
+
+// ============================================================================
+//   *** 新增部分 1: 智能编码转换函数 ***
+//
+//   将输入的UTF-8字符串转换为目标编码页(codepage)的字符串
+//   如果目标是UTF-8，则直接返回；否则进行转换。
+// ============================================================================
+std::string convertUtf8ToTargetEncoding(const std::string& utf8String, int targetCodepage)
+{
+	// 如果目标编码已经是UTF-8 (codepage 65001)，则无需转换
+	if (targetCodepage == CP_UTF8 || utf8String.empty()) {
+		return utf8String;
+	}
+
+	// 步骤1: 将源 UTF-8 字符串转换为宽字节字符串 (UTF-16)
+	int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8String.c_str(), -1, NULL, 0);
+	if (wlen == 0) return "";
+
 	std::vector<wchar_t> wbuffer(wlen);
-	MultiByteToWideChar(CP_UTF8, 0, selectedText.c_str(), -1, wbuffer.data(), wlen); // 使用 CP_UTF8
+	MultiByteToWideChar(CP_UTF8, 0, utf8String.c_str(), -1, wbuffer.data(), wlen);
 
-	std::wstring wSelectedText(wbuffer.data());
+	// 步骤2: 将宽字节字符串 (UTF-16) 转换为目标编码页的字符串
+	int mblen = WideCharToMultiByte(targetCodepage, 0, wbuffer.data(), -1, NULL, 0, NULL, NULL);
+	if (mblen == 0) return "";
 
-	std::wstring encodedText = UrlEncode(wSelectedText);
-	std::wstring url = TRANSLATE_URL + encodedText;
+	std::vector<char> mbbuffer(mblen);
+	WideCharToMultiByte(targetCodepage, 0, wbuffer.data(), -1, mbbuffer.data(), mblen, NULL, NULL);
 
-	// 1. 获取新的更新器代理设置
-	ProxyInfo proxy = getNppUpdaterProxySettings();
-
-	// 2. 使用支持代理的函数发起请求
-	std::string response = httpGetWithProxy(url, proxy);
-
-	if (response.empty()) {
-		::MessageBoxW(nppData._nppHandle, L"Failed to connect to translation service.\nCheck your network connection and Notepad++ proxy settings.", L"Translate Plugin Error", MB_OK | MB_ICONERROR);
-		return;
-	}
-
-	// 3. 解析出翻译结果 (此时是UTF-8编码的字符串)
-	std::string utf8TranslatedText = ParseGoogleTranslation(response);
-	::MessageBoxA(nppData._nppHandle,
-		utf8TranslatedText.c_str(),
-		"Translate Plugin 04", MB_OK | MB_ICONERROR);
-
-	// ============================================================================
-	//   *** 智能编码处理核心 ***
-	// ============================================================================
-	// 4. 获取当前文档的编码格式
-	//LPARAM currentBufferID = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
-	//DWORD currentEncoding = (DWORD)::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, (WPARAM)currentBufferID, 0);
-	//int currentEncoding = ::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, (WPARAM)nppData._currentBufferID, 0);
-	// 对于 ANSI, 返回的是 0, 我们需要将其映射到系统默认代码页
-	if (currentEncoding == 0) {
-		currentEncoding = GetACP();
-	}
-
-	char szBufer[100] = { 0 };
-	sprintf(szBufer, "encodeing=%d.", currentEncoding);
-	::MessageBoxA(nppData._nppHandle,
-		szBufer,
-		"Translate Plugin 5", MB_OK | MB_ICONERROR);
-
-
-	// 5. 将UTF-8的翻译结果转换为当前文档需要的编码
-	std::string finalTranslatedText = convertUtf8ToTargetEncoding(utf8TranslatedText, currentEncoding);
-
-	::MessageBoxA(nppData._nppHandle,
-		finalTranslatedText.c_str(),
-		"Translate Plugin 6", MB_OK | MB_ICONERROR);
-
-	// 6. 准备插入文本并执行插入
-	std::string textToInsert = "\r\n" + finalTranslatedText;
-	intptr_t currentPos = ::SendMessage(hCurrentScintilla, SCI_GETCURRENTPOS, 0, 0);
-	intptr_t line = ::SendMessage(hCurrentScintilla, SCI_LINEFROMPOSITION, currentPos, 0);
-	intptr_t lineEndPos = ::SendMessage(hCurrentScintilla, SCI_GETLINEENDPOSITION, line, 0);
-
-
-	::SendMessage(hCurrentScintilla, SCI_INSERTTEXT, lineEndPos, (LPARAM)textToInsert.c_str());
-
-}
-*/
-
-/*
-// 从API响应中解析翻译结果 (简易版)
-DEPRECATED("This function is outdated, please use addNumbersV2(int, int) instead.")
-std::string ParseTranslation2(const std::string& jsonResponse)
-{
-	const std::string searchKey = "\"translatedText\":\"";
-	size_t startPos = jsonResponse.find(searchKey);
-	if (startPos == std::string::npos) return "Translation not found.";
-
-	startPos += searchKey.length();
-	size_t endPos = jsonResponse.find("\"", startPos);
-	if (endPos == std::string::npos) return "Translation format error.";
-
-	return jsonResponse.substr(startPos, endPos - startPos);
+	return std::string(mbbuffer.data());
 }
 
-
-
-DEPRECATED("This function is outdated, please use addNumbersV2(int, int) instead.")
-void translateSelection2()
-{
-	HWND hCurrentScintilla = nppData._scintillaMainHandle;
-
-	// 1. 获取选中的文本
-	intptr_t selLength = ::SendMessage(hCurrentScintilla, SCI_GETSELTEXT, 0, 0);
-	if (selLength <= 1) return; // 没有选择内容或只有一个字符，不做任何事
-
-	std::vector<char> buffer(selLength);
-	::SendMessage(hCurrentScintilla, SCI_GETSELTEXT, 0, (LPARAM)buffer.data());
-	std::string selectedText(buffer.data());
-
-	// 2. 调用免费翻译API (MyMemory API)
-	std::wstring wSelectedText(selectedText.begin(), selectedText.end());
-	std::wstring encodedText = UrlEncode(wSelectedText);
-	std::wstring url = L"http://api.mymemory.translated.net/get?q=" + encodedText + L"&langpair=auto|en";
-
-	IStream* pStream = nullptr;
-	if (S_OK != URLOpenBlockingStream(NULL, url.c_str(), &pStream, 0, NULL))
-	{
-		::MessageBoxA(nppData._nppHandle, "Failed to connect to translation service.", "Translate Plugin", MB_OK);
-		return;
-	}
-
-	std::string response;
-	char readBuffer[256];
-	ULONG bytesRead;
-	while (pStream->Read(readBuffer, sizeof(readBuffer), &bytesRead) == S_OK && bytesRead > 0)
-	{
-		response.append(readBuffer, bytesRead);
-	}
-	pStream->Release();
-
-	// 3. 解析并获取翻译结果
-	std::string translatedText = ParseTranslation2(response);
-
-	// 4. 在下一行插入翻译结果
-	intptr_t currentPos = ::SendMessage(hCurrentScintilla, SCI_GETCURRENTPOS, 0, 0);
-	intptr_t line = ::SendMessage(hCurrentScintilla, SCI_LINEFROMPOSITION, currentPos, 0);
-	intptr_t lineEndPos = ::SendMessage(hCurrentScintilla, SCI_GETLINEENDPOSITION, line, 0);
-
-	std::string textToInsert = "\r\n" + translatedText;
-	::SendMessage(hCurrentScintilla, SCI_INSERTTEXT, lineEndPos, (LPARAM)textToInsert.c_str());
-
-}
-*/
 
 
