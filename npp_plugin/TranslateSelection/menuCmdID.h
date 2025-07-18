@@ -1,0 +1,4 @@
+#pragma once
+
+#define IDM_ABOUT 40001
+#define IDM_TRANSLATE_SELECTION 40002

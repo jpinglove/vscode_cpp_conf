@@ -5,6 +5,9 @@
 #include <vector>
 #include <any>
 #include <ranges>
+#include <locale>
+#include <codecvt> // For std::codecvt_utf8 (pre-C++17)
+
 
 using namespace std;
 
@@ -75,6 +78,32 @@ void fun3()
 // }
 
 
+void func5(){
+
+    // 1. Set the console output to UTF-8
+// On Windows, you might need to use `_setmode` from <fcntl.h> and <io.h>
+// For a more robust cross-platform solution, consider libraries like {fmt}.
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+    _setmode(_fileno(stdout), _O_U16TEXT);
+#endif
+
+    // 2. Use a wide string literal (L-prefix) for Unicode characters
+    std::wstring wideString = L"你好";
+
+    // 3. Output using wcout (wide character output stream)
+    std::wcout << wideString << std::endl;
+
+    // Alternatively, if you're dealing with UTF-8 encoded strings:
+    // In C++20 and later, you can use u8"" string literals.
+    // For earlier C++ versions, you might need a different approach or a conversion library.
+    std::string utf8String = u8"你好";
+    std::cout << utf8String << std::endl; // This might not display correctly in some consoles without proper setup
+
+
+}
+
 int main()
 {
     // inline const int MAX_SIZE = 100;
@@ -86,6 +115,7 @@ int main()
     fun2();
     fun3();
     // fun4();
+    func5();
 
     return 0;
 }
