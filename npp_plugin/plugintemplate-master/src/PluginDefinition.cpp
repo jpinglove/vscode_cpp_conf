@@ -1,4 +1,4 @@
-
+ï»¿
 
 //this file is part of notepad++
 //Copyright (C)2022 Don HO <don.h@free.fr>
@@ -17,57 +17,58 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+#ifndef _NPP_HEADER_H_
+#define _NPP_HEADER_H_
+
 #include "PluginDefinition.h"
 #include "menuCmdID.h"
 #include <Urlmon.h>
 #include <Shlwapi.h>
 #include <string>
-#include <fstream>      // ÓÃÓÚÎÄ¼ş¶ÁÈ¡
-//#include <sstream>      // ÓÃÓÚÎÄ¼şÁ÷
-#include <sstream>   // ¶ÔÓ¦ std::wostringstream
-#include <ShlObj.h>     // ËäÈ»²»ÔÙÓÃSHGetFolderPath£¬µ«±£Áô¿ÉÄÜÓĞÓÃ
-#include <Shlwapi.h>    // ÓÃÓÚÂ·¾¶´¦Àíº¯Êı PathRemoveFileSpecW, PathAppendW
-#include <wininet.h>    // ÓÃÓÚ WinINET API
+#include <fstream>      // ç”¨äºæ–‡ä»¶è¯»å–
+//#include <sstream>      // ç”¨äºæ–‡ä»¶æµ
+#include <sstream>   // å¯¹åº” std::wostringstream
+#include <ShlObj.h>     // è™½ç„¶ä¸å†ç”¨SHGetFolderPathï¼Œä½†ä¿ç•™å¯èƒ½æœ‰ç”¨
+#include <Shlwapi.h>    // ç”¨äºè·¯å¾„å¤„ç†å‡½æ•° PathRemoveFileSpecW, PathAppendW
+#include <wininet.h>    // ç”¨äº WinINET API
 #include <windows.h>
-#include <iomanip>   // ¶ÔÓ¦ std::setw, std::hex, std::uppercase µÈ
+#include <iomanip>   // å¯¹åº” std::setw, std::hex, std::uppercase ç­‰
+#include "Utility.h"
+using namespace std;
 
-
+#endif
 
 
 #pragma comment(lib, "urlmon.lib")
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "wininet.lib")
 
-using namespace std;
 
-#if defined(__GNUC__) || defined(__clang__)
-#define DEPRECATED(msg) __attribute__((deprecated(msg)))
-#elif defined(_MSC_VER)
-#define DEPRECATED(msg) __declspec(deprecated(msg))
-#else
-#define DEPRECATED(msg)
-#endif
-
-#define	TRANSLATE_URL	L"https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-CN&tl=en&dt=t&q="
-
-
-
-// ´úÀíĞÅÏ¢½á¹¹Ìå
+// ä»£ç†ä¿¡æ¯ç»“æ„ä½“
 struct ProxyInfo {
 	bool enabled = false;
 	std::wstring server;
-	INTERNET_PORT port = 0; // ³õÊ¼ÖµÎª0£¬±íÊ¾Î´ÉèÖÃ
+	INTERNET_PORT port = 0; // åˆå§‹å€¼ä¸º0ï¼Œè¡¨ç¤ºæœªè®¾ç½®
 };
-// È«¾Ö±äÁ¿
+
+// å…¨å±€å˜é‡
 //
 // The plugin data that Notepad++ needs
 //
 FuncItem funcItem[nbFunc];
+Utility utilityTools;
 
 //
 // The data of Notepad++ that you can use in your plugin commands
 //
 NppData nppData;
+
+//
+// function define
+//
+ProxyInfo getNppUpdaterProxySettings();
+std::string httpGetWithProxy(const std::wstring& url, const ProxyInfo& proxy);
+
 
 //
 // Initialize your plugin data here
@@ -112,7 +113,7 @@ void commandMenuInit()
  //   setCommand(0, TEXT("Hello Notepad++"), hello, NULL, false);
 	//setCommand(1, TEXT("Hello (with dialog)"), helloDlg, NULL, false);
 	setCommand(0, TEXT("TranslateSelection"), translateSelection, pSk, false);
-    //subclassScintillaForContextMenu(); // °²×°ÓÒ¼ü²Ëµ¥¹³×Ó
+    //subclassScintillaForContextMenu(); // å®‰è£…å³é”®èœå•é’©å­
 }
 
 //
@@ -170,134 +171,117 @@ void helloDlg()
     ::MessageBox(NULL, TEXT("Hello, Notepad++!"), TEXT("Notepad++ Plugin Template"), MB_OK);
 }
 
-// ============================================================================
-//   *** ĞÂÔö²¿·Ö 1: Notepad++ ±àÂëµ½ Windows ´úÂëÒ³µÄÓ³Éäº¯Êı ***
-//
-//   Õâ¸öº¯ÊıÊÇ½â¾öËùÓĞÎÊÌâµÄ¹Ø¼ü "·­Òë¹Ù"
-// ============================================================================
-int mapNppEncodingToWindowsCodepage(int nppEncoding)
+
+
+
+void translateSelection()
 {
-	// ²Î¿¼ Notepad++ µÄ UniMode Ã¶¾Ù
-	switch (nppEncoding)
-	{
-	case 4: // UNI_UTF8 (UTF-8 BOM)
-	case 5: // UNI_UTF8_NOBOM (UTF-8 without BOM)
-		return CP_UTF8; // 65001
+	// 1. è·å– Notepad++ çš„å†…éƒ¨ç¼–ç æšä¸¾å€¼
+	LPARAM currentBufferID = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+	int nppEncoding = (int)(::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, (WPARAM)currentBufferID, 0));
 
-	case 0: // ANSI
-		return GetACP(); // »ñÈ¡ÏµÍ³Ä¬ÈÏ´úÂëÒ³ (ÀıÈç 936)
+	// 2. ã€å…³é”®ã€‘å°† Notepad++ çš„ç¼–ç æ˜ å°„åˆ° Windows API è®¤è¯†çš„ä»£ç é¡µ ID
+	int windowsCodepage = utilityTools.mapNppEncodingToWindowsCodepage(nppEncoding);
 
-	case 1: // UNI_UCS2_LE
-		return 1200;
-	case 2: // UNI_UCS2_BE
-		return 1201;
+	// 3. è·å–é€‰ä¸­çš„åŸå§‹æ–‡æœ¬å­—èŠ‚æµ (å…¶ç¼–ç ä¸ windowsCodepage ä¸€è‡´)
+	HWND hCurrentScintilla = nppData._scintillaMainHandle;
+	intptr_t selLength = ::SendMessage(hCurrentScintilla, SCI_GETSELTEXT, 0, 0);
+	if (selLength <= 1) return;
 
-	default:
-		// ¶ÔÓÚÎ´ÖªµÄ»ò²»Ö§³ÖµÄ±àÂë£¬»ØÍËµ½ÏµÍ³Ä¬ÈÏ±àÂë
-		return GetACP();
-	}
-}
+	std::vector<char> buffer(selLength);
+	::SendMessage(hCurrentScintilla, SCI_GETSELTEXT, 0, (LPARAM)buffer.data());
+	std::string originalSelectedText(buffer.data());
 
-std::wstring urlEncodeW(const std::wstring& wstr)
-{
-	// Step 1: Convert wstring (UTF-16) to UTF-8 string
-	int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
-	if (utf8Len <= 0) return L"";
+	// 4. å°†é€‰ä¸­çš„æ–‡æœ¬ä»å…¶åŸå§‹ç¼–ç ç»Ÿä¸€è½¬æ¢ä¸º UTF-8ï¼Œä»¥ä¾¿å‘é€ç»™Google
+	std::string utf8SelectedText = utilityTools.convertStringEncoding(originalSelectedText, windowsCodepage, CP_UTF8);
 
-	std::string utf8Str(utf8Len - 1, 0); // Remove null terminator
-	WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, &utf8Str[0], utf8Len, nullptr, nullptr);
+	// 5. å°† UTF-8 å­—ç¬¦ä¸²è½¬æ¢ä¸ºå®½å­—èŠ‚ (wchar_t) ä»¥è¿›è¡Œ URL ç¼–ç 
+	std::wstring strSelectedText = utilityTools.utf8ToWString(utf8SelectedText);
 
-	// Step 2: URL encode UTF-8 string
-	std::wostringstream escaped;
-	escaped.fill(L'0');
-	escaped << std::hex;
+	//int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8SelectedText.c_str(), -1, NULL, 0);
+	//if (wlen == 0) return;
+	//std::vector<wchar_t> wbuffer(wlen);
+	//MultiByteToWideChar(CP_UTF8, 0, utf8SelectedText.c_str(), -1, wbuffer.data(), wlen);
+	// std::wstring(wbuffer.data())
+	std::wstring encodedText = utilityTools.urlEncodeW(strSelectedText);
 
-	for (unsigned char c : utf8Str)
-	{
-		if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
-		{
-			escaped << static_cast<wchar_t>(c);
-		}
-		else
-		{
-			escaped << L'%' << std::uppercase << std::setw(2) << int(c);
-		}
+	std::wstring url = TRANSLATE_URL + encodedText;
+
+	// 6. è·å–ä»£ç†å¹¶å‘èµ·ç½‘ç»œè¯·æ±‚
+	ProxyInfo proxy = getNppUpdaterProxySettings();
+
+	std::string response = httpGetWithProxy(url, proxy);
+
+	if (response.empty()) {
+		::MessageBoxW(nppData._nppHandle, L"Failed to connect to translation service.\nCheck your network connection and Notepad++ proxy settings.", L"Translate Plugin Error", MB_OK | MB_ICONERROR);
+		return;
 	}
 
-	return escaped.str();
-}
+	// 8. ã€å…³é”®ã€‘å°†UTF-8çš„ç¿»è¯‘ç»“æœè½¬æ¢å›å½“å‰æ–‡æ¡£çš„åŸå§‹ç¼–ç  (windowsCodepage)
+	//std::wstring ftxt = utilityTools.utf8ToWString(response);
+	//::MessageBoxW(nppData._nppHandle,
+	//	ftxt.c_str(),
+	//	L"Translate Plugin 02", MB_OK | MB_ICONERROR);
 
-// ============================================================================
-//   *** ĞÂÔö²¿·Ö 1: Í¨ÓÃ±àÂë×ª»»º¯Êı ***
-//
-//   ½«ÊäÈë×Ö·û´®´ÓÔ´±àÂë(sourceCodepage)×ª»»ÎªÄ¿±ê±àÂë(destCodepage)
-// ============================================================================
-std::string convertStringEncoding(const std::string& input, int sourceCodepage, int destCodepage)
-{
-	if (input.empty() || sourceCodepage == destCodepage) {
-		return input;
-	}
+	std::wstring wstrUtf16 = utilityTools.Utf8ToUtf16(response);
+	//::MessageBoxW(nppData._nppHandle,
+	//	wstrUtf16.c_str(),
+	//	L"Translate Plugin 02", MB_OK | MB_ICONERROR);
 
-	// ²½Öè1: ½«Ô´×Ö·û´®×ª»»Îª¿í×Ö½Ú×Ö·û´® (UTF-16)
-	int wlen = MultiByteToWideChar(sourceCodepage, 0, input.c_str(), -1, NULL, 0);
-	if (wlen == 0) return "";
+	std::string newResponseText = utilityTools.WstringToGbk(wstrUtf16);
 
-	std::vector<wchar_t> wbuffer(wlen);
-	MultiByteToWideChar(sourceCodepage, 0, input.c_str(), -1, wbuffer.data(), wlen);
+	//::MessageBoxA(nppData._nppHandle,
+	//	newResponseText.c_str(),
+	//	"Translate Plugin 02", MB_OK | MB_ICONERROR);
 
-	// ²½Öè2: ½«¿í×Ö½Ú×Ö·û´® (UTF-16) ×ª»»ÎªÄ¿±ê±àÂë×Ö·û´®
-	int mblen = WideCharToMultiByte(destCodepage, 0, wbuffer.data(), -1, NULL, 0, NULL, NULL);
-	if (mblen == 0) return "";
+	// 7. è§£æå‡ºç¿»è¯‘ç»“æœ (è¿™æ˜¯UTF-8ç¼–ç çš„å­—ç¬¦ä¸²)
+	std::string utf8TranslatedText = utilityTools.ParseGoogleTranslation(newResponseText);
+	//::MessageBoxA(nppData._nppHandle,
+	//	utf8TranslatedText.c_str(),
+	//	"Translate Plugin 03", MB_OK | MB_ICONERROR);
 
-	std::vector<char> mbbuffer(mblen);
-	WideCharToMultiByte(destCodepage, 0, wbuffer.data(), -1, mbbuffer.data(), mblen, NULL, NULL);
+	// 8. ã€å…³é”®ã€‘å°†UTF-8çš„ç¿»è¯‘ç»“æœè½¬æ¢å›å½“å‰æ–‡æ¡£çš„åŸå§‹ç¼–ç  (windowsCodepage)
+	std::string finalTranslatedText = utilityTools.convertStringEncoding(utf8TranslatedText, CP_UTF8, windowsCodepage);
+	//::MessageBoxA(nppData._nppHandle,
+	//	finalTranslatedText.c_str(),
+	//	"Translate Plugin 04", MB_OK | MB_ICONERROR);
 
-	return std::string(mbbuffer.data());
-}
+	// 9. å‡†å¤‡å¹¶æ’å…¥æœ€ç»ˆæ–‡æœ¬
+	std::string textToInsert = "\r\n" + finalTranslatedText;
+	intptr_t currentPos = ::SendMessage(hCurrentScintilla, SCI_GETCURRENTPOS, 0, 0);
+	intptr_t line = ::SendMessage(hCurrentScintilla, SCI_LINEFROMPOSITION, currentPos, 0);
+	intptr_t lineEndPos = ::SendMessage(hCurrentScintilla, SCI_GETLINEENDPOSITION, line, 0);
 
-// ============================================================================
-//   *** ĞÂÔö²¿·Ö 1: ´ÓXMLÄÚÈİÖĞÌáÈ¡±êÇ©ÖµµÄ¸¨Öúº¯Êı ***
-// ============================================================================
-std::string extractTagValue(const std::string& content, const std::string& tagName) {
-	std::string startTag = "<" + tagName + ">";
-	std::string endTag = "</" + tagName + ">";
-
-	size_t startPos = content.find(startTag);
-	if (startPos == std::string::npos) return "";
-
-	startPos += startTag.length();
-	size_t endPos = content.find(endTag, startPos);
-	if (endPos == std::string::npos) return "";
-
-	return content.substr(startPos, endPos - startPos);
+	::SendMessage(hCurrentScintilla, SCI_INSERTTEXT, lineEndPos, (LPARAM)textToInsert.c_str());
 }
 
 
+
 // ============================================================================
-//   *** ĞŞ¸Ä²¿·Ö 2: È«ÃæÖØ¹¹»ñÈ¡´úÀíÉèÖÃµÄº¯Êı ***
+//   *** ä¿®æ”¹éƒ¨åˆ† 2: å…¨é¢é‡æ„è·å–ä»£ç†è®¾ç½®çš„å‡½æ•° ***
 // ============================================================================
 ProxyInfo getNppUpdaterProxySettings() {
 	ProxyInfo proxy;
 	WCHAR nppPath[MAX_PATH] = { 0 };
 
-	// 1. »ñÈ¡Notepad++¿ÉÖ´ĞĞÎÄ¼şµÄÍêÕûÂ·¾¶
-	// GetModuleFileNameW(NULL, ...) »ñÈ¡µ±Ç°½ø³Ì(notepad++.exe)µÄÂ·¾¶
+	// 1. è·å–Notepad++å¯æ‰§è¡Œæ–‡ä»¶çš„å®Œæ•´è·¯å¾„
+	// GetModuleFileNameW(NULL, ...) è·å–å½“å‰è¿›ç¨‹(notepad++.exe)çš„è·¯å¾„
 	if (GetModuleFileNameW(NULL, nppPath, MAX_PATH) == 0) {
-		return proxy; // »ñÈ¡Â·¾¶Ê§°Ü£¬·µ»Ø¿Õ´úÀíĞÅÏ¢
+		return proxy; // è·å–è·¯å¾„å¤±è´¥ï¼Œè¿”å›ç©ºä»£ç†ä¿¡æ¯
 	}
 
-	// 2. ´ÓÍêÕûÂ·¾¶ÖĞÒÆ³ıÎÄ¼şÃû£¬µÃµ½Notepad++µÄ°²×°Ä¿Â¼
+	// 2. ä»å®Œæ•´è·¯å¾„ä¸­ç§»é™¤æ–‡ä»¶åï¼Œå¾—åˆ°Notepad++çš„å®‰è£…ç›®å½•
 	// "C:\Program Files\Notepad++\notepad++.exe" -> "C:\Program Files\Notepad++"
 	PathRemoveFileSpecW(nppPath);
 
-	// 3. ¹¹½¨ gupOptions.xml µÄÍêÕûÂ·¾¶
+	// 3. æ„å»º gupOptions.xml çš„å®Œæ•´è·¯å¾„
 	// -> "C:\Program Files\Notepad++\updater\gupOptions.xml"
 	PathAppendW(nppPath, L"updater\\gupOptions.xml");
 
-	// 4. ¶ÁÈ¡²¢½âÎöXMLÎÄ¼ş
+	// 4. è¯»å–å¹¶è§£æXMLæ–‡ä»¶
 	std::ifstream configFile(nppPath);
 	if (!configFile.is_open()) {
-		return proxy; // ÎÄ¼ş²»´æÔÚ»òÎŞ·¨´ò¿ª£¬·µ»Ø¿Õ´úÀíĞÅÏ¢
+		return proxy; // æ–‡ä»¶ä¸å­˜åœ¨æˆ–æ— æ³•æ‰“å¼€ï¼Œè¿”å›ç©ºä»£ç†ä¿¡æ¯
 	}
 
 	std::stringstream buffer;
@@ -306,30 +290,30 @@ ProxyInfo getNppUpdaterProxySettings() {
 	configFile.close();
 
 	if (content.empty()) {
-		return proxy; // ÎÄ¼şÎª¿Õ£¬·µ»Ø¿Õ´úÀíĞÅÏ¢
+		return proxy; // æ–‡ä»¶ä¸ºç©ºï¼Œè¿”å›ç©ºä»£ç†ä¿¡æ¯
 	}
 
-	// ´ÓÄÚÈİÖĞÌáÈ¡ <server> ºÍ <port> µÄÖµ
-	std::string serverStr = extractTagValue(content, "server");
-	std::string portStr = extractTagValue(content, "port");
+	// ä»å†…å®¹ä¸­æå– <server> å’Œ <port> çš„å€¼
+	std::string serverStr = utilityTools.extractTagValue(content, "server");
+	std::string portStr = utilityTools.extractTagValue(content, "port");
 
-	// 5. ÑéÖ¤²¢Ìî³ä´úÀíĞÅÏ¢
+	// 5. éªŒè¯å¹¶å¡«å……ä»£ç†ä¿¡æ¯
 	if (!serverStr.empty() && !portStr.empty()) {
-		// ½« server (string) ×ª»»Îª wstring
+		// å°† server (string) è½¬æ¢ä¸º wstring
 		int wlen = MultiByteToWideChar(CP_UTF8, 0, serverStr.c_str(), -1, NULL, 0);
 		std::vector<wchar_t> wbuffer(wlen);
 		MultiByteToWideChar(CP_UTF8, 0, serverStr.c_str(), -1, wbuffer.data(), wlen);
 		proxy.server = std::wstring(wbuffer.data());
 
-		// ×ª»»¶Ë¿Ú×Ö·û´®ÎªÕûÊı£¬²¢½øĞĞ´íÎó´¦Àí
+		// è½¬æ¢ç«¯å£å­—ç¬¦ä¸²ä¸ºæ•´æ•°ï¼Œå¹¶è¿›è¡Œé”™è¯¯å¤„ç†
 		try {
 			proxy.port = (INTERNET_PORT)std::stoi(portStr);
 			if (proxy.port > 0 && proxy.port <= 65535) {
-				proxy.enabled = true; // Ö»ÓĞµ±ËùÓĞĞÅÏ¢¶¼ÓĞĞ§Ê±£¬²ÅÆôÓÃ´úÀí
+				proxy.enabled = true; // åªæœ‰å½“æ‰€æœ‰ä¿¡æ¯éƒ½æœ‰æ•ˆæ—¶ï¼Œæ‰å¯ç”¨ä»£ç†
 			}
 		}
 		catch (...) {
-			// ¶Ë¿ÚºÅ²»ÊÇÒ»¸öÓĞĞ§µÄÊı×Ö£¬±£³Ö´úÀíÎª½ûÓÃ×´Ì¬
+			// ç«¯å£å·ä¸æ˜¯ä¸€ä¸ªæœ‰æ•ˆçš„æ•°å­—ï¼Œä¿æŒä»£ç†ä¸ºç¦ç”¨çŠ¶æ€
 			proxy.enabled = false;
 		}
 	}
@@ -337,19 +321,19 @@ ProxyInfo getNppUpdaterProxySettings() {
 	return proxy;
 }
 
-// WinINET HTTP GET º¯Êı
+// WinINET HTTP GET å‡½æ•°
 std::string httpGetWithProxy(const std::wstring& url, const ProxyInfo& proxy) {
 	HINTERNET hInternet = NULL, hConnect = NULL;
 	std::string result = "";
 	DWORD bytesRead = 0;
 
 	const wchar_t* pProxyName = NULL;
-	DWORD dwInternetOpenType = INTERNET_OPEN_TYPE_DIRECT; // Ä¬ÈÏÖ±½ÓÁ¬½Ó
-	std::wstring proxyStr; // ±ØĞëÔÚº¯Êı×÷ÓÃÓòÄÚ£¬ÒÔ±£Ö¤pProxyNameÖ¸ÕëÓĞĞ§
+	DWORD dwInternetOpenType = INTERNET_OPEN_TYPE_DIRECT; // é»˜è®¤ç›´æ¥è¿æ¥
+	std::wstring proxyStr; // å¿…é¡»åœ¨å‡½æ•°ä½œç”¨åŸŸå†…ï¼Œä»¥ä¿è¯pProxyNameæŒ‡é’ˆæœ‰æ•ˆ
 
 	if (proxy.enabled && !proxy.server.empty() && proxy.port > 0) {
 		dwInternetOpenType = INTERNET_OPEN_TYPE_PROXY;
-		// ¸ñÊ½»¯´úÀí·şÎñÆ÷×Ö·û´®: "http://server:port"
+		// æ ¼å¼åŒ–ä»£ç†æœåŠ¡å™¨å­—ç¬¦ä¸²: "http://server:port"
 		proxyStr = L"http://" + proxy.server + L":" + std::to_wstring(proxy.port);
 		pProxyName = proxyStr.c_str();
 	}
@@ -372,219 +356,5 @@ std::string httpGetWithProxy(const std::wstring& url, const ProxyInfo& proxy) {
 
 	InternetCloseHandle(hConnect);
 	InternetCloseHandle(hInternet);
-
-	//::MessageBoxA(nppData._nppHandle,
-	//	result.c_str(),
-	//	"Translate Plugin 03", MB_OK | MB_ICONERROR);
-
-	/*
-	// --- µ÷ÊÔÈÕÖ¾Ğ´Èë (ÒÑ¸üĞÂÎª¼æÈİĞÂ¾É°æ±¾) ---
-	wchar_t configPath[MAX_PATH] = { 0 }; // ³õÊ¼»¯Îª¿Õ×Ö·û´®
-
-	// ÓÅÏÈ³¢ÊÔĞÂ·½·¨ (NPM_GETPLUGINSCONFIGDIR)
-	// #ifdef ÓÃÓÚ±àÒëÊ±¼ì²é£¬¼´Ê¹ºê´æÔÚ£¬SendMessageÒ²¿ÉÄÜÔÚ¾É°æN++ÉÏÊ§°Ü
-#ifdef NPM_GETPLUGINSCONFIGDIR 
-	::SendMessage(nppData._nppHandle, NPM_GETPLUGINSCONFIGDIR, MAX_PATH, (LPARAM)configPath);
-#endif
-
-	// Èç¹ûĞÂ·½·¨Ê§°Ü (Â·¾¶ÈÔÈ»Îª¿Õ), ÔòÊ¹ÓÃ»ØÍËµÄ¾É·½·¨
-	if (configPath[0] == L'\0')
-	{
-		if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, configPath)))
-		{
-			// ÊÖ¶¯Æ´½ÓÂ·¾¶: %APPDATA%\Notepad++\plugins\config
-			lstrcatW(configPath, L"\\Notepad++\\plugins\\config");
-			// È·±£Ä¿Â¼´æÔÚ£¬Èç¹û²»´æÔÚÔò´´½¨Ëü
-			CreateDirectoryW(L"C:\\Users\\<ÄãµÄÓÃ»§Ãû>\\AppData\\Roaming\\Notepad++\\plugins", NULL);
-			CreateDirectoryW(configPath, NULL);
-		}
-	}
-
-	// È·±£ÎÒÃÇ³É¹¦»ñÈ¡ÁËÂ·¾¶
-	if (configPath[0] != L'\0')
-	{
-		std::wstring logFilePath = std::wstring(configPath) + L"\\TranslateSelection_last_response.txt";
-		std::ofstream logFile(logFilePath, std::ios::binary);
-		if (logFile.is_open())
-		{
-			logFile << result;
-			logFile.close();
-		}
-	}
-	// --- µ÷ÊÔ½áÊø ---
-	*/
-
 	return result;
 }
-
-
-// ============================================================================
-//   *** ĞŞ¸Ä²¿·Ö 1: ¸üĞÂ½âÎöº¯ÊıÒÔÊÊÓ¦¹È¸è·­ÒëµÄÏìÓ¦¸ñÊ½ ***
-// ============================================================================
-// ´Ó¹È¸èAPIÏìÓ¦ÖĞ½âÎö·­Òë½á¹û
-// ¹È¸èµÄÏìÓ¦¸ñÊ½ÊÇÕâÑùµÄ: [[["Hello","ÄãºÃ",null,null,1]],null,"zh-CN",...]
-// ÎÒÃÇĞèÒªÌáÈ¡³öµÚÒ»¸öË«ÒıºÅÄÚµÄ "Hello"
-std::string ParseGoogleTranslation(const std::string& jsonResponse)
-{
-	const std::string searchKey = "[[[\"";
-	size_t startPos = jsonResponse.find(searchKey);
-	if (startPos == std::string::npos) {
-		return "Translation not found in response.";
-	}
-
-	startPos += searchKey.length();
-	size_t endPos = jsonResponse.find("\"", startPos);
-	if (endPos == std::string::npos) {
-		return "Translation format error.";
-	}
-
-	return jsonResponse.substr(startPos, endPos - startPos);
-}
-
-
-void translateSelection()
-{
-	// 1. »ñÈ¡ Notepad++ µÄÄÚ²¿±àÂëÃ¶¾ÙÖµ
-	LPARAM currentBufferID = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
-	int nppEncoding = (int)(::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, (WPARAM)currentBufferID, 0));
-
-	// 2. ¡¾¹Ø¼ü¡¿½« Notepad++ µÄ±àÂëÓ³Éäµ½ Windows API ÈÏÊ¶µÄ´úÂëÒ³ ID
-	int windowsCodepage = mapNppEncodingToWindowsCodepage(nppEncoding);
-
-	// 3. »ñÈ¡Ñ¡ÖĞµÄÔ­Ê¼ÎÄ±¾×Ö½ÚÁ÷ (Æä±àÂëÓë windowsCodepage Ò»ÖÂ)
-	HWND hCurrentScintilla = nppData._scintillaMainHandle;
-	intptr_t selLength = ::SendMessage(hCurrentScintilla, SCI_GETSELTEXT, 0, 0);
-	if (selLength <= 1) return;
-
-	std::vector<char> buffer(selLength);
-	::SendMessage(hCurrentScintilla, SCI_GETSELTEXT, 0, (LPARAM)buffer.data());
-	std::string originalSelectedText(buffer.data());
-
-	// 4. ½«Ñ¡ÖĞµÄÎÄ±¾´ÓÆäÔ­Ê¼±àÂëÍ³Ò»×ª»»Îª UTF-8£¬ÒÔ±ã·¢ËÍ¸øGoogle
-	std::string utf8SelectedText = convertStringEncoding(originalSelectedText, windowsCodepage, CP_UTF8);
-
-	// 5. ½« UTF-8 ×Ö·û´®×ª»»Îª¿í×Ö½Ú (wchar_t) ÒÔ½øĞĞ URL ±àÂë
-	int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8SelectedText.c_str(), -1, NULL, 0);
-	if (wlen == 0) return;
-	std::vector<wchar_t> wbuffer(wlen);
-	MultiByteToWideChar(CP_UTF8, 0, utf8SelectedText.c_str(), -1, wbuffer.data(), wlen);
-
-	std::wstring encodedText = urlEncodeW(std::wstring(wbuffer.data()));
-
-	std::wstring url = TRANSLATE_URL + encodedText;
-
-	//::MessageBoxW(nppData._nppHandle,
-	//	url.c_str(),
-	//	L"Translate Plugin 66", MB_OK | MB_ICONERROR);
-
-	// 6. »ñÈ¡´úÀí²¢·¢ÆğÍøÂçÇëÇó
-	ProxyInfo proxy = getNppUpdaterProxySettings();
-
-	std::string response = httpGetWithProxy(url, proxy);
-
-	if (response.empty()) {
-		::MessageBoxW(nppData._nppHandle, L"Failed to connect to translation service.\nCheck your network connection and Notepad++ proxy settings.", L"Translate Plugin Error", MB_OK | MB_ICONERROR);
-		return;
-	}
-	//std::wstring readableResponse = gbkToWstring(response);
-	//::MessageBoxW(nppData._nppHandle,
-	//	readableResponse.c_str(),
-	//	L"Translate Plugin 099", MB_OK | MB_ICONERROR);
-
-	// 8. ¡¾¹Ø¼ü¡¿½«UTF-8µÄ·­Òë½á¹û×ª»»»Øµ±Ç°ÎÄµµµÄÔ­Ê¼±àÂë (windowsCodepage)
-	//std::string ftxt = convertStringEncoding(response, CP_UTF8, windowsCodepage);
-	//::MessageBoxA(nppData._nppHandle,
-	//	ftxt.c_str(),
-	//	"Translate Plugin 03", MB_OK | MB_ICONERROR);
-
-
-	// 7. ½âÎö³ö·­Òë½á¹û (ÕâÊÇUTF-8±àÂëµÄ×Ö·û´®)
-	std::string utf8TranslatedText = ParseGoogleTranslation(response);
-
-	// 8. ¡¾¹Ø¼ü¡¿½«UTF-8µÄ·­Òë½á¹û×ª»»»Øµ±Ç°ÎÄµµµÄÔ­Ê¼±àÂë (windowsCodepage)
-	std::string finalTranslatedText = convertStringEncoding(utf8TranslatedText, CP_UTF8, windowsCodepage);
-
-	// 9. ×¼±¸²¢²åÈë×îÖÕÎÄ±¾
-	std::string textToInsert = "\r\n" + finalTranslatedText;
-	intptr_t currentPos = ::SendMessage(hCurrentScintilla, SCI_GETCURRENTPOS, 0, 0);
-	intptr_t line = ::SendMessage(hCurrentScintilla, SCI_LINEFROMPOSITION, currentPos, 0);
-	intptr_t lineEndPos = ::SendMessage(hCurrentScintilla, SCI_GETLINEENDPOSITION, line, 0);
-
-	::SendMessage(hCurrentScintilla, SCI_INSERTTEXT, lineEndPos, (LPARAM)textToInsert.c_str());
-}
-
-
-std::wstring utf8ToWString(const std::string& str)
-{
-	int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), NULL, 0);
-	std::wstring wstr(len, L'\0');
-	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.size(), &wstr[0], len);
-	return wstr;
-}
-
-std::wstring gbkToWstring(const std::string& str)
-{
-	int len = MultiByteToWideChar(936 /*GBK*/, 0, str.c_str(), (int)str.length(), NULL, 0);
-	if (len == 0) return L"";
-	std::wstring result(len, 0);
-	MultiByteToWideChar(936 /*GBK*/, 0, str.c_str(), (int)str.length(), &result[0], len);
-	return result;
-}
-
-/*
-std::string urlEncode(const std::string& str)
-{
-	std::ostringstream escaped;
-	escaped.fill('0');
-	escaped << std::hex;
-
-	for (char c : str)
-	{
-		if (isalnum((unsigned char)c) || c == '-' || c == '_' || c == '.' || c == '~')
-		{
-			escaped << c;
-		}
-		else
-		{
-			escaped << '%' << std::uppercase << std::setw(2)
-				<< int((unsigned char)c) << std::nouppercase;
-		}
-	}
-
-	return escaped.str();
-}
-*/
-
-
-// ============================================================================
-//   *** ĞÂÔö²¿·Ö 1: ÖÇÄÜ±àÂë×ª»»º¯Êı ***
-//
-//   ½«ÊäÈëµÄUTF-8×Ö·û´®×ª»»ÎªÄ¿±ê±àÂëÒ³(codepage)µÄ×Ö·û´®
-//   Èç¹ûÄ¿±êÊÇUTF-8£¬ÔòÖ±½Ó·µ»Ø£»·ñÔò½øĞĞ×ª»»¡£
-// ============================================================================
-std::string convertUtf8ToTargetEncoding(const std::string& utf8String, int targetCodepage)
-{
-	// Èç¹ûÄ¿±ê±àÂëÒÑ¾­ÊÇUTF-8 (codepage 65001)£¬ÔòÎŞĞè×ª»»
-	if (targetCodepage == CP_UTF8 || utf8String.empty()) {
-		return utf8String;
-	}
-
-	// ²½Öè1: ½«Ô´ UTF-8 ×Ö·û´®×ª»»Îª¿í×Ö½Ú×Ö·û´® (UTF-16)
-	int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8String.c_str(), -1, NULL, 0);
-	if (wlen == 0) return "";
-
-	std::vector<wchar_t> wbuffer(wlen);
-	MultiByteToWideChar(CP_UTF8, 0, utf8String.c_str(), -1, wbuffer.data(), wlen);
-
-	// ²½Öè2: ½«¿í×Ö½Ú×Ö·û´® (UTF-16) ×ª»»ÎªÄ¿±ê±àÂëÒ³µÄ×Ö·û´®
-	int mblen = WideCharToMultiByte(targetCodepage, 0, wbuffer.data(), -1, NULL, 0, NULL, NULL);
-	if (mblen == 0) return "";
-
-	std::vector<char> mbbuffer(mblen);
-	WideCharToMultiByte(targetCodepage, 0, wbuffer.data(), -1, mbbuffer.data(), mblen, NULL, NULL);
-
-	return std::string(mbbuffer.data());
-}
-
-
-
