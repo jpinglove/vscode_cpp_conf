@@ -108,7 +108,7 @@ void commandMenuInit()
 	pSk->_isCtrl = true;
 	pSk->_isShift = false;
 	pSk->_isAlt = true;
-	pSk->_key = 'T';
+	pSk->_key = 'K';
 
  //   setCommand(0, TEXT("Hello Notepad++"), hello, NULL, false);
 	//setCommand(1, TEXT("Hello (with dialog)"), helloDlg, NULL, false);
@@ -170,8 +170,6 @@ void helloDlg()
 {
     ::MessageBox(NULL, TEXT("Hello, Notepad++!"), TEXT("Notepad++ Plugin Template"), MB_OK);
 }
-
-
 
 
 void translateSelection()
