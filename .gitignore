@@ -55,5 +55,11 @@ vs.proj/.vs/
 *.zip
 *.bak
 *.exp
+*.opensdf
+*.lib
+*.user
+.vs
+
+
 
 
