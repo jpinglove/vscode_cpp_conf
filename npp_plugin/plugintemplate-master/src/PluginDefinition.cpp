@@ -113,7 +113,7 @@ void commandMenuInit()
 
  //   setCommand(0, TEXT("Hello Notepad++"), hello, NULL, false);
 	setCommand(0, TEXT("TranslateSelection"), translateSelection, pSk, false);
-	setCommand(1, TEXT("Setting"), helloDlg, NULL, false);
+	setCommand(1, TEXT("Settings"), helloDlg, NULL, false);
 
     //subclassScintillaForContextMenu(); // 安装右键菜单钩子
 }
@@ -190,6 +190,7 @@ void helloDlg()
 
 	CSettingsDlg setdlg;
 	setdlg.create(&tbData);
+	setdlg.display();
     //::MessageBox(NULL, TEXT("Hello, Notepad++!"), TEXT("Notepad++ Plugin Template"), MB_OK);
 }
 
