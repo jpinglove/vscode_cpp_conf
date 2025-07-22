@@ -27,7 +27,8 @@
 #include "Utility.h"
 
 using namespace std;
-
+#include "./DockingFeature/Docking.h"
+#include "./DockingFeature/SettingsDlg.h"
 #endif
 
 // 全局变量
@@ -86,7 +87,11 @@ void commandMenuInit()
 
  //   setCommand(0, TEXT("Hello Notepad++"), hello, NULL, false);
 	setCommand(0, TEXT("TranslateSelection"), translateSelection, pSk, false);
+<<<<<<< HEAD
 	//setCommand(1, TEXT("Setting"), helloDlg, NULL, false);
+=======
+	setCommand(1, TEXT("Settings"), helloDlg, NULL, false);
+>>>>>>> 0b3e5b6be6bce2745c8f6801935be80d92080395
 
     //subclassScintillaForContextMenu(); // 安装右键菜单钩子
 }
@@ -142,7 +147,28 @@ void hello()
 
 void helloDlg()
 {
-    ::MessageBox(NULL, TEXT("Hello, Notepad++!"), TEXT("Notepad++ Plugin Template"), MB_OK);
+	//struct tTbData {
+	//	HWND hClient = nullptr;                  // client Window Handle
+	//	const wchar_t* pszName = nullptr;        // name of plugin (shown in window)
+	//	int dlgID = 0;                           // a funcItem provides the function pointer to start a dialog. Please parse here these ID
+
+	//	// user modifications
+	//	UINT uMask = 0;                          // mask params: look to above defines
+	//	HICON hIconTab = nullptr;                // icon for tabs
+	//	const wchar_t* pszAddInfo = nullptr;     // for plugin to display additional information
+
+	//	// internal data, do not use !!!
+	//	RECT rcFloat = {};                       // floating position
+	//	int iPrevCont = 0;                       // stores the privious container (toggling between float and dock)
+	//	const wchar_t* pszModuleName = nullptr;  // it's the plugin file name. It's used to identify the plugin
+	//};
+
+	tTbData tbData;
+
+	CSettingsDlg setdlg;
+	setdlg.create(&tbData);
+	setdlg.display();
+    //::MessageBox(NULL, TEXT("Hello, Notepad++!"), TEXT("Notepad++ Plugin Template"), MB_OK);
 }
 
 
