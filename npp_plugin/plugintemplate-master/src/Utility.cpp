@@ -4,7 +4,8 @@
 #include <sstream>   // 对应 std::wostringstream
 #include <vector>
 #include <iomanip>   // 对应 std::setw, std::hex, std::uppercase 等
-
+#include <ShlObj.h>     // 虽然不再用SHGetFolderPath，但保留可能有用
+#include <Shlwapi.h>    // 用于路径处理函数 PathRemoveFileSpecW, PathAppendW
 
 Utility::Utility()
 {
@@ -143,7 +144,7 @@ std::string Utility::extractTagValue(const std::string& content, const std::stri
 	return content.substr(startPos, endPos - startPos);
 }
 
-/*
+
 // ============================================================================
 //   *** 修改部分 2: 全面重构获取代理设置的函数 ***
 // ============================================================================
@@ -207,9 +208,7 @@ ProxyInfo Utility::getNppUpdaterProxySettings() {
 
 	return proxy;
 }
-*/
 
-/*
 // WinINET HTTP GET 函数
 std::string Utility::httpGetWithProxy(const std::wstring& url, const ProxyInfo& proxy) {
 	HINTERNET hInternet = NULL, hConnect = NULL;
@@ -250,7 +249,7 @@ std::string Utility::httpGetWithProxy(const std::wstring& url, const ProxyInfo& 
 	//	result.c_str(),
 	//	"Translate Plugin 03", MB_OK | MB_ICONERROR);
 
-	/ *
+	/*
 	// --- 调试日志写入 (已更新为兼容新旧版本) ---
 	wchar_t configPath[MAX_PATH] = { 0 }; // 初始化为空字符串
 
@@ -285,11 +284,11 @@ std::string Utility::httpGetWithProxy(const std::wstring& url, const ProxyInfo& 
 		}
 	}
 	// --- 调试结束 ---
-	* /
+	*/
 
 	return result;
 }
-*/
+
 
 
 // ============================================================================

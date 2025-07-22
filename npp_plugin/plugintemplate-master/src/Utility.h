@@ -1,14 +1,16 @@
 #pragma once
 
+#include <windows.h>
+#include <wininet.h>    // 用于 WinINET API
 
-#ifndef _NPP_HEADER_H_
-#define _NPP_HEADER_H_
+
+//#ifndef _NPP_HEADER_H_
+//#define _NPP_HEADER_H_
 
 #include <string>
 #include <fstream> 
 using namespace std;
-
-#endif
+//#endif
 
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -21,6 +23,20 @@ using namespace std;
 
 #define	TRANSLATE_URL	L"https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-CN&tl=en&dt=t&q="
 
+
+#pragma comment(lib, "urlmon.lib")
+#pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "wininet.lib")
+
+
+// 代理信息结构体
+struct ProxyInfo {
+	bool enabled = false;
+	std::wstring server;
+	INTERNET_PORT port = 0; // 初始值为0，表示未设置
+};
+
+
 class Utility
 {
 public:
@@ -32,8 +48,8 @@ public:
 	std::string urlEncode(const std::string& str);
 	std::string convertStringEncoding(const std::string& input, int sourceCodepage, int destCodepage);
 	std::string extractTagValue(const std::string& content, const std::string& tagName);
-	//ProxyInfo getNppUpdaterProxySettings();
-	//std::string httpGetWithProxy(const std::wstring& url, const ProxyInfo& proxy);
+	ProxyInfo getNppUpdaterProxySettings();
+	std::string httpGetWithProxy(const std::wstring& url, const ProxyInfo& proxy);
 	std::string ParseGoogleTranslation(const std::string& jsonResponse);
 	std::wstring utf8ToWString(const std::string& str);
 	std::wstring gbkToWstring(const std::string& str);
@@ -45,4 +61,5 @@ public:
 	std::string WstringToGbk(const std::wstring& wide_string);
 
 };
+
 

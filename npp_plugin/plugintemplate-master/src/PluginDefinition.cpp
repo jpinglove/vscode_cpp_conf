@@ -22,34 +22,13 @@
 
 #include "PluginDefinition.h"
 #include "menuCmdID.h"
-#include <Urlmon.h>
-#include <Shlwapi.h>
 #include <string>
-#include <fstream>      // 用于文件读取
-//#include <sstream>      // 用于文件流
-#include <sstream>   // 对应 std::wostringstream
-#include <ShlObj.h>     // 虽然不再用SHGetFolderPath，但保留可能有用
-#include <Shlwapi.h>    // 用于路径处理函数 PathRemoveFileSpecW, PathAppendW
-#include <wininet.h>    // 用于 WinINET API
 #include <windows.h>
-#include <iomanip>   // 对应 std::setw, std::hex, std::uppercase 等
 #include "Utility.h"
+
 using namespace std;
 
 #endif
-
-
-#pragma comment(lib, "urlmon.lib")
-#pragma comment(lib, "shlwapi.lib")
-#pragma comment(lib, "wininet.lib")
-
-
-// 代理信息结构体
-struct ProxyInfo {
-	bool enabled = false;
-	std::wstring server;
-	INTERNET_PORT port = 0; // 初始值为0，表示未设置
-};
 
 // 全局变量
 //
@@ -58,16 +37,11 @@ struct ProxyInfo {
 FuncItem funcItem[nbFunc];
 Utility utilityTools;
 
+
 //
 // The data of Notepad++ that you can use in your plugin commands
 //
 NppData nppData;
-
-//
-// function define
-//
-ProxyInfo getNppUpdaterProxySettings();
-std::string httpGetWithProxy(const std::wstring& url, const ProxyInfo& proxy);
 
 
 //
@@ -111,8 +85,9 @@ void commandMenuInit()
 	pSk->_key = 'K';
 
  //   setCommand(0, TEXT("Hello Notepad++"), hello, NULL, false);
-	//setCommand(1, TEXT("Hello (with dialog)"), helloDlg, NULL, false);
 	setCommand(0, TEXT("TranslateSelection"), translateSelection, pSk, false);
+	//setCommand(1, TEXT("Setting"), helloDlg, NULL, false);
+
     //subclassScintillaForContextMenu(); // 安装右键菜单钩子
 }
 
@@ -125,7 +100,6 @@ void commandMenuCleanUp()
     if (funcItem[0]._pShKey)
     	delete funcItem[0]._pShKey;
 }
-
 
 //
 // This function help you to initialize your plugin commands
@@ -206,9 +180,9 @@ void translateSelection()
 	std::wstring url = TRANSLATE_URL + encodedText;
 
 	// 6. 获取代理并发起网络请求
-	ProxyInfo proxy = getNppUpdaterProxySettings();
+	ProxyInfo proxy = utilityTools.getNppUpdaterProxySettings();
 
-	std::string response = httpGetWithProxy(url, proxy);
+	std::string response = utilityTools.httpGetWithProxy(url, proxy);
 
 	if (response.empty()) {
 		::MessageBoxW(nppData._nppHandle, L"Failed to connect to translation service.\nCheck your network connection and Notepad++ proxy settings.", L"Translate Plugin Error", MB_OK | MB_ICONERROR);
@@ -254,105 +228,3 @@ void translateSelection()
 }
 
 
-
-// ============================================================================
-//   *** 修改部分 2: 全面重构获取代理设置的函数 ***
-// ============================================================================
-ProxyInfo getNppUpdaterProxySettings() {
-	ProxyInfo proxy;
-	WCHAR nppPath[MAX_PATH] = { 0 };
-
-	// 1. 获取Notepad++可执行文件的完整路径
-	// GetModuleFileNameW(NULL, ...) 获取当前进程(notepad++.exe)的路径
-	if (GetModuleFileNameW(NULL, nppPath, MAX_PATH) == 0) {
-		return proxy; // 获取路径失败，返回空代理信息
-	}
-
-	// 2. 从完整路径中移除文件名，得到Notepad++的安装目录
-	// "C:\Program Files\Notepad++\notepad++.exe" -> "C:\Program Files\Notepad++"
-	PathRemoveFileSpecW(nppPath);
-
-	// 3. 构建 gupOptions.xml 的完整路径
-	// -> "C:\Program Files\Notepad++\updater\gupOptions.xml"
-	PathAppendW(nppPath, L"updater\\gupOptions.xml");
-
-	// 4. 读取并解析XML文件
-	std::ifstream configFile(nppPath);
-	if (!configFile.is_open()) {
-		return proxy; // 文件不存在或无法打开，返回空代理信息
-	}
-
-	std::stringstream buffer;
-	buffer << configFile.rdbuf();
-	std::string content = buffer.str();
-	configFile.close();
-
-	if (content.empty()) {
-		return proxy; // 文件为空，返回空代理信息
-	}
-
-	// 从内容中提取 <server> 和 <port> 的值
-	std::string serverStr = utilityTools.extractTagValue(content, "server");
-	std::string portStr = utilityTools.extractTagValue(content, "port");
-
-	// 5. 验证并填充代理信息
-	if (!serverStr.empty() && !portStr.empty()) {
-		// 将 server (string) 转换为 wstring
-		int wlen = MultiByteToWideChar(CP_UTF8, 0, serverStr.c_str(), -1, NULL, 0);
-		std::vector<wchar_t> wbuffer(wlen);
-		MultiByteToWideChar(CP_UTF8, 0, serverStr.c_str(), -1, wbuffer.data(), wlen);
-		proxy.server = std::wstring(wbuffer.data());
-
-		// 转换端口字符串为整数，并进行错误处理
-		try {
-			proxy.port = (INTERNET_PORT)std::stoi(portStr);
-			if (proxy.port > 0 && proxy.port <= 65535) {
-				proxy.enabled = true; // 只有当所有信息都有效时，才启用代理
-			}
-		}
-		catch (...) {
-			// 端口号不是一个有效的数字，保持代理为禁用状态
-			proxy.enabled = false;
-		}
-	}
-
-	return proxy;
-}
-
-// WinINET HTTP GET 函数
-std::string httpGetWithProxy(const std::wstring& url, const ProxyInfo& proxy) {
-	HINTERNET hInternet = NULL, hConnect = NULL;
-	std::string result = "";
-	DWORD bytesRead = 0;
-
-	const wchar_t* pProxyName = NULL;
-	DWORD dwInternetOpenType = INTERNET_OPEN_TYPE_DIRECT; // 默认直接连接
-	std::wstring proxyStr; // 必须在函数作用域内，以保证pProxyName指针有效
-
-	if (proxy.enabled && !proxy.server.empty() && proxy.port > 0) {
-		dwInternetOpenType = INTERNET_OPEN_TYPE_PROXY;
-		// 格式化代理服务器字符串: "http://server:port"
-		proxyStr = L"http://" + proxy.server + L":" + std::to_wstring(proxy.port);
-		pProxyName = proxyStr.c_str();
-	}
-
-	hInternet = InternetOpenW(L"NppTranslatePlugin/1.0", dwInternetOpenType, pProxyName, NULL, 0);
-	if (!hInternet) return "";
-
-
-	hConnect = InternetOpenUrlW(hInternet, url.c_str(), NULL, 0, INTERNET_FLAG_RELOAD | INTERNET_FLAG_NO_CACHE_WRITE, 0);
-	if (!hConnect) {
-		InternetCloseHandle(hInternet);
-		return "";
-	}
-
-	char buffer[4096];
-	while (InternetReadFile(hConnect, buffer, sizeof(buffer) - 1, &bytesRead) && bytesRead > 0) {
-		buffer[bytesRead] = '\0';
-		result.append(buffer);
-	}
-
-	InternetCloseHandle(hConnect);
-	InternetCloseHandle(hInternet);
-	return result;
-}
