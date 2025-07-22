@@ -29,6 +29,7 @@
 using namespace std;
 #include "./DockingFeature/Docking.h"
 #include "./DockingFeature/SettingsDlg.h"
+#include "./DockingFeature/GoToLineDlg.h"
 #endif
 
 // 全局变量
@@ -43,14 +44,17 @@ Utility utilityTools;
 // The data of Notepad++ that you can use in your plugin commands
 //
 NppData nppData;
+HINSTANCE g_hInstance;
 
+DemoDlg gotoLineDlg;
+tTbData tbData;
 
 //
 // Initialize your plugin data here
 // It will be called while plugin loading   
-void pluginInit(HANDLE /*hModule*/)
+void pluginInit(HANDLE hModule)
 {
-
+	g_hInstance = (HINSTANCE)hModule;
 }
 
 //
@@ -78,7 +82,6 @@ void commandMenuInit()
     //            bool check0nInit                // optional. Make this menu item be checked visually
     //            );
 
-
     ShortcutKey* pSk = new ShortcutKey();
 	pSk->_isCtrl = true;
 	pSk->_isShift = false;
@@ -87,11 +90,7 @@ void commandMenuInit()
 
  //   setCommand(0, TEXT("Hello Notepad++"), hello, NULL, false);
 	setCommand(0, TEXT("TranslateSelection"), translateSelection, pSk, false);
-<<<<<<< HEAD
-	//setCommand(1, TEXT("Setting"), helloDlg, NULL, false);
-=======
 	setCommand(1, TEXT("Settings"), helloDlg, NULL, false);
->>>>>>> 0b3e5b6be6bce2745c8f6801935be80d92080395
 
     //subclassScintillaForContextMenu(); // 安装右键菜单钩子
 }
@@ -163,11 +162,17 @@ void helloDlg()
 	//	const wchar_t* pszModuleName = nullptr;  // it's the plugin file name. It's used to identify the plugin
 	//};
 
-	tTbData tbData;
 
-	CSettingsDlg setdlg;
-	setdlg.create(&tbData);
-	setdlg.display();
+
+	//CSettingsDlg setdlg;
+	//setdlg.create(&tbData);
+	//setdlg.display();
+
+	gotoLineDlg.init(g_hInstance, nppData._nppHandle);
+	gotoLineDlg.create(&tbData);
+	//gotoLineDlg.setParent(nppData._nppHandle);
+	gotoLineDlg.display();
+
     //::MessageBox(NULL, TEXT("Hello, Notepad++!"), TEXT("Notepad++ Plugin Template"), MB_OK);
 }
 

@@ -43,6 +43,7 @@ public:
     void create(tTbData* data, bool isRTL = false) {
 		assert(data != nullptr);
 		StaticDialog::create(_dlgID, isRTL);
+
 		TCHAR temp[MAX_PATH];
 		::GetWindowText(_hSelf, temp, MAX_PATH);
 		_pluginName = temp;
