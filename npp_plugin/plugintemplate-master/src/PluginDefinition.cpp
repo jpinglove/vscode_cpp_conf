@@ -84,9 +84,11 @@ void commandMenuInit()
 
     ShortcutKey* pSk = new ShortcutKey();
 	pSk->_isCtrl = true;
-	pSk->_isShift = false;
-	pSk->_isAlt = true;
-	pSk->_key = 'K';
+	pSk->_isShift = true;
+	pSk->_isAlt = false;
+	//pSk->_key = 'K';
+	//pSk->_key = ',';
+	pSk->_key = VK_OEM_COMMA;
 
  //   setCommand(0, TEXT("Hello Notepad++"), hello, NULL, false);
 	setCommand(0, TEXT("TranslateSelection"), translateSelection, pSk, false);

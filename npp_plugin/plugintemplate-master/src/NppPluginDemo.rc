@@ -14,8 +14,8 @@ LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,1,0,3
- PRODUCTVERSION 1,1,0,3
+ FILEVERSION 1,1,0,4
+ PRODUCTVERSION 1,1,0,4
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -32,12 +32,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Don HO don.h@free.fr"
             VALUE "FileDescription", "Plugin translated text to English for Notepad++"
-            VALUE "FileVersion", "1.1.0.3"
+            VALUE "FileVersion", "1.1.0.4"
             VALUE "InternalName", "NppPluginTemplate.dll"
             VALUE "LegalCopyright", "Copyright 2025 by Jonathan JI"
             VALUE "OriginalFilename", "NppPluginTemplate.dll"
             VALUE "ProductName", "NppPluginTemplate"
-            VALUE "ProductVersion", "1.1.0.3"
+            VALUE "ProductVersion", "1.1.0.4"
         END
     END
     BLOCK "VarFileInfo"
