@@ -28,7 +28,7 @@
 //-------------------------------------//
 // Here define your plugin name
 //
-const TCHAR NPP_PLUGIN_NAME[] = TEXT("TranslateSelection");
+const TCHAR NPP_PLUGIN_NAME[] = TEXT("Translate Selection");
 
 //-----------------------------------------------//
 //-- STEP 2. DEFINE YOUR PLUGIN COMMAND NUMBER --//
@@ -36,7 +36,7 @@ const TCHAR NPP_PLUGIN_NAME[] = TEXT("TranslateSelection");
 //
 // Here define the number of your plugin commands
 //
-const int nbFunc = 2;
+const int nbFunc = 3;
 
 
 //
@@ -66,12 +66,10 @@ void commandMenuCleanUp();
 //
 bool setCommand(size_t index, TCHAR *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKey *sk = NULL, bool check0nInit = false);
 
-
 //
 // Your plugin command functions
 //
 void hello();
 void helloDlg();
-void translateSelection();
 
 #endif //PLUGINDEFINITION_H

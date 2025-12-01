@@ -35,8 +35,10 @@
     <ClInclude Include="..\src\DockingFeature\SettingsDlg.h" />
     <ClInclude Include="..\src\DockingFeature\StaticDialog.h" />
     <ClInclude Include="..\src\DockingFeature\Window.h" />
+    <ClInclude Include="..\src\Logger.h" />
     <ClInclude Include="..\src\menuCmdID.h" />
     <ClInclude Include="..\src\Notepad_plus_msgs.h" />
+    <ClInclude Include="..\src\PhoneticFeature.h" />
     <ClInclude Include="..\src\PluginDefinition.h" />
     <ClInclude Include="..\src\PluginInterface.h" />
     <ClInclude Include="..\src\resource.h" />
@@ -48,7 +50,9 @@
     <ClCompile Include="..\src\DockingFeature\GoToLineDlg.cpp" />
     <ClCompile Include="..\src\DockingFeature\SettingsDlg.cpp" />
     <ClCompile Include="..\src\DockingFeature\StaticDialog.cpp" />
+    <ClCompile Include="..\src\Logger.cpp" />
     <ClCompile Include="..\src\NppPluginDemo.cpp" />
+    <ClCompile Include="..\src\PhoneticFeature.cpp" />
     <ClCompile Include="..\src\PluginDefinition.cpp" />
     <ClCompile Include="..\src\Utility.cpp" />
   </ItemGroup>

@@ -25,10 +25,12 @@
 #include <string>
 #include <windows.h>
 #include "Utility.h"
+#include "PhoneticFeature.h" 
+#include "Logger.h" // 引入日志
+
 
 using namespace std;
 #include "./DockingFeature/Docking.h"
-#include "./DockingFeature/SettingsDlg.h"
 #include "./DockingFeature/GoToLineDlg.h"
 #endif
 
@@ -55,6 +57,7 @@ tTbData tbData;
 void pluginInit(HANDLE hModule)
 {
 	g_hInstance = (HINSTANCE)hModule;
+    Logs("PluginInit called. g_hInstance = %p", g_hInstance);
 }
 
 //
@@ -86,13 +89,20 @@ void commandMenuInit()
 	pSk->_isCtrl = true;
 	pSk->_isShift = true;
 	pSk->_isAlt = false;
-	//pSk->_key = 'K';
-	//pSk->_key = ',';
 	pSk->_key = VK_OEM_COMMA;
 
+	ShortcutKey* pSk2 = new ShortcutKey();
+	pSk2->_isCtrl = true;
+	pSk2->_isShift = true;
+	pSk2->_isAlt = false;
+	pSk2->_key = VK_OEM_PERIOD;
+
+
+
  //   setCommand(0, TEXT("Hello Notepad++"), hello, NULL, false);
-	setCommand(0, TEXT("TranslateSelection"), translateSelection, pSk, false);
-	setCommand(1, TEXT("Settings"), helloDlg, NULL, false);
+	setCommand(0, TEXT("Translate Selection"), translateSelection, pSk, false);
+	setCommand(1, TEXT("Get Word Details"), GetWordDetailsAndInsert, pSk2, false);
+	setCommand(2, TEXT("Settings"), showSettingDlg, NULL, false);
 
     //subclassScintillaForContextMenu(); // 安装右键菜单钩子
 }
@@ -148,27 +158,6 @@ void hello()
 
 void helloDlg()
 {
-	//struct tTbData {
-	//	HWND hClient = nullptr;                  // client Window Handle
-	//	const wchar_t* pszName = nullptr;        // name of plugin (shown in window)
-	//	int dlgID = 0;                           // a funcItem provides the function pointer to start a dialog. Please parse here these ID
-
-	//	// user modifications
-	//	UINT uMask = 0;                          // mask params: look to above defines
-	//	HICON hIconTab = nullptr;                // icon for tabs
-	//	const wchar_t* pszAddInfo = nullptr;     // for plugin to display additional information
-
-	//	// internal data, do not use !!!
-	//	RECT rcFloat = {};                       // floating position
-	//	int iPrevCont = 0;                       // stores the privious container (toggling between float and dock)
-	//	const wchar_t* pszModuleName = nullptr;  // it's the plugin file name. It's used to identify the plugin
-	//};
-
-
-
-	//CSettingsDlg setdlg;
-	//setdlg.create(&tbData);
-	//setdlg.display();
 
 	gotoLineDlg.init(g_hInstance, nppData._nppHandle);
 	gotoLineDlg.create(&tbData);
@@ -178,86 +167,5 @@ void helloDlg()
     //::MessageBox(NULL, TEXT("Hello, Notepad++!"), TEXT("Notepad++ Plugin Template"), MB_OK);
 }
 
-
-void translateSelection()
-{
-	// 1. 获取 Notepad++ 的内部编码枚举值
-	LPARAM currentBufferID = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
-	int nppEncoding = (int)(::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, (WPARAM)currentBufferID, 0));
-
-	// 2. 【关键】将 Notepad++ 的编码映射到 Windows API 认识的代码页 ID
-	int windowsCodepage = utilityTools.mapNppEncodingToWindowsCodepage(nppEncoding);
-
-	// 3. 获取选中的原始文本字节流 (其编码与 windowsCodepage 一致)
-	HWND hCurrentScintilla = nppData._scintillaMainHandle;
-	intptr_t selLength = ::SendMessage(hCurrentScintilla, SCI_GETSELTEXT, 0, 0);
-	if (selLength <= 1) return;
-
-	std::vector<char> buffer(selLength);
-	::SendMessage(hCurrentScintilla, SCI_GETSELTEXT, 0, (LPARAM)buffer.data());
-	std::string originalSelectedText(buffer.data());
-
-	// 4. 将选中的文本从其原始编码统一转换为 UTF-8，以便发送给Google
-	std::string utf8SelectedText = utilityTools.convertStringEncoding(originalSelectedText, windowsCodepage, CP_UTF8);
-
-	// 5. 将 UTF-8 字符串转换为宽字节 (wchar_t) 以进行 URL 编码
-	std::wstring strSelectedText = utilityTools.utf8ToWString(utf8SelectedText);
-
-	//int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8SelectedText.c_str(), -1, NULL, 0);
-	//if (wlen == 0) return;
-	//std::vector<wchar_t> wbuffer(wlen);
-	//MultiByteToWideChar(CP_UTF8, 0, utf8SelectedText.c_str(), -1, wbuffer.data(), wlen);
-	// std::wstring(wbuffer.data())
-	std::wstring encodedText = utilityTools.urlEncodeW(strSelectedText);
-
-	std::wstring url = TRANSLATE_URL + encodedText;
-
-	// 6. 获取代理并发起网络请求
-	ProxyInfo proxy = utilityTools.getNppUpdaterProxySettings();
-
-	std::string response = utilityTools.httpGetWithProxy(url, proxy);
-
-	if (response.empty()) {
-		::MessageBoxW(nppData._nppHandle, L"Failed to connect to translation service.\nCheck your network connection and Notepad++ proxy settings.", L"Translate Plugin Error", MB_OK | MB_ICONERROR);
-		return;
-	}
-
-	// 8. 【关键】将UTF-8的翻译结果转换回当前文档的原始编码 (windowsCodepage)
-	//std::wstring ftxt = utilityTools.utf8ToWString(response);
-	//::MessageBoxW(nppData._nppHandle,
-	//	ftxt.c_str(),
-	//	L"Translate Plugin 02", MB_OK | MB_ICONERROR);
-
-	std::wstring wstrUtf16 = utilityTools.Utf8ToUtf16(response);
-	//::MessageBoxW(nppData._nppHandle,
-	//	wstrUtf16.c_str(),
-	//	L"Translate Plugin 02", MB_OK | MB_ICONERROR);
-
-	std::string newResponseText = utilityTools.WstringToGbk(wstrUtf16);
-
-	//::MessageBoxA(nppData._nppHandle,
-	//	newResponseText.c_str(),
-	//	"Translate Plugin 02", MB_OK | MB_ICONERROR);
-
-	// 7. 解析出翻译结果 (这是UTF-8编码的字符串)
-	std::string utf8TranslatedText = utilityTools.ParseGoogleTranslation(newResponseText);
-	//::MessageBoxA(nppData._nppHandle,
-	//	utf8TranslatedText.c_str(),
-	//	"Translate Plugin 03", MB_OK | MB_ICONERROR);
-
-	// 8. 【关键】将UTF-8的翻译结果转换回当前文档的原始编码 (windowsCodepage)
-	std::string finalTranslatedText = utilityTools.convertStringEncoding(utf8TranslatedText, CP_UTF8, windowsCodepage);
-	//::MessageBoxA(nppData._nppHandle,
-	//	finalTranslatedText.c_str(),
-	//	"Translate Plugin 04", MB_OK | MB_ICONERROR);
-
-	// 9. 准备并插入最终文本
-	std::string textToInsert = "\r\n" + finalTranslatedText;
-	intptr_t currentPos = ::SendMessage(hCurrentScintilla, SCI_GETCURRENTPOS, 0, 0);
-	intptr_t line = ::SendMessage(hCurrentScintilla, SCI_LINEFROMPOSITION, currentPos, 0);
-	intptr_t lineEndPos = ::SendMessage(hCurrentScintilla, SCI_GETLINEENDPOSITION, line, 0);
-
-	::SendMessage(hCurrentScintilla, SCI_INSERTTEXT, lineEndPos, (LPARAM)textToInsert.c_str());
-}
 
 
