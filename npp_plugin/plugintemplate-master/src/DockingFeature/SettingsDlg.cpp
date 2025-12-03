@@ -2,12 +2,13 @@
 //
 
 //#include "pch.h"
+#include "../Utility.h"
 #include "SettingsDlg.h"
 #include "../PluginDefinition.h"
 #include "../Logger.h"
 
+extern Utility utilityTools; // 引用全局工具对象
 extern NppData nppData;
-
 
 INT_PTR CALLBACK CSettingsDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -66,7 +67,25 @@ if (line != -1)
 }
 */
 
-	MessageBox(NULL, L"hello", L"hello", MB_OK);
+	// 1. 获取 Edit 控件内容
+	const int ilen = MAX_PATH >> 2;
+	WCHAR szIP[MAX_PATH] = { 0 };
+	WCHAR szPort[ilen] = { 0 };
+
+	::GetDlgItemText(_hSelf, IDC_EDIT_IP, szIP, MAX_PATH);
+	::GetDlgItemText(_hSelf, IDC_EDIT_PORT, szPort, ilen);
+
+	// 2. 调用 Utility 保存
+	if (utilityTools.SaveProxySettings(szIP, szPort))
+	{
+		::MessageBox(_hSelf, TEXT("Settings Saved Successfully!"), TEXT("Info"), MB_OK | MB_ICONINFORMATION);
+		// 保存成功后隐藏窗口
+		::ShowWindow(_hSelf, SW_HIDE);
+	}
+	else
+	{
+		::MessageBox(_hSelf, TEXT("Failed to save settings.\nPlease check input."), TEXT("Error"), MB_OK | MB_ICONERROR);
+	}
 
 }
 

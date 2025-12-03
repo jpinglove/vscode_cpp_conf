@@ -28,6 +28,7 @@ CSettingsDlg settingsDlg;
 // ==========================================
 const std::wstring DICTIONARY_API_URL = L"https://api.dictionaryapi.dev/api/v2/entries/en/";
 
+/*
 void translateSelection()
 {
 	// 1. 获取 Notepad++ 的内部编码枚举值
@@ -63,6 +64,8 @@ void translateSelection()
 
 	// 6. 获取代理并发起网络请求
 	ProxyInfo proxy = utilityTools.getNppUpdaterProxySettings();
+
+	Logs(L"proxy server=%s:%d", proxy.server, proxy.port);
 
 	std::string response = utilityTools.httpGetWithProxy(url, proxy);
 
@@ -108,6 +111,87 @@ void translateSelection()
 
 	::SendMessage(hCurrentScintilla, SCI_INSERTTEXT, lineEndPos, (LPARAM)textToInsert.c_str());
 }
+*/
+
+void translateSelection()
+{
+	// 1. 获取 Notepad++ 的内部编码及对应的 Windows Codepage
+	LPARAM currentBufferID = ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTBUFFERID, 0, 0);
+	int nppEncoding = (int)(::SendMessage(nppData._nppHandle, NPPM_GETBUFFERENCODING, (WPARAM)currentBufferID, 0));
+	int windowsCodepage = utilityTools.mapNppEncodingToWindowsCodepage(nppEncoding);
+
+	// 2. 获取选中文本
+	HWND hCurrentScintilla = nppData._scintillaMainHandle;
+	intptr_t selLength = ::SendMessage(hCurrentScintilla, SCI_GETSELTEXT, 0, 0);
+	if (selLength <= 1) return;
+
+	std::vector<char> buffer(selLength);
+	::SendMessage(hCurrentScintilla, SCI_GETSELTEXT, 0, (LPARAM)buffer.data());
+	std::string originalSelectedText(buffer.data());
+
+	// 3. 准备 URL (将选中文本转为 UTF-8 -> URL Encode)
+	std::string utf8SelectedText = utilityTools.convertStringEncoding(originalSelectedText, windowsCodepage, CP_UTF8);
+	std::wstring strSelectedText = utilityTools.utf8ToWString(utf8SelectedText);
+	std::wstring encodedText = utilityTools.urlEncodeW(strSelectedText);
+	std::wstring url = TRANSLATE_URL + encodedText;
+
+	// 【修改】获取代理逻辑
+	// 1. 优先尝试获取插件自定义代理
+	ProxyInfo proxy = utilityTools.GetPluginProxySettings();
+	// 2. 如果插件没设置代理(或文件不存在)，则回退尝试 Notepad++ 的代理 (可选)
+	if (!proxy.enabled) {
+		// 4. 发起网络请求
+		proxy = utilityTools.getNppUpdaterProxySettings();
+	}
+
+	std::string response = utilityTools.httpGetWithProxy(url, proxy);
+	Logs(L"proxy server=%ws:%d", proxy.server.c_str(), proxy.port);
+
+	// 5. 错误检查：网络错误
+	if (response.empty()) {
+		Logs(L"proxy server=%ws:%d", proxy.server.c_str(), proxy.port);
+		::MessageBoxW(nppData._nppHandle, L"Failed to connect to translation service.", L"Error", MB_OK | MB_ICONERROR);
+		return;
+	}
+
+	Logs("res:%s", response.c_str());
+
+	// 6. 错误检查：IP 被封禁 (Google 返回了 HTML 而不是 JSON)
+	// 简单的检查方法：看响应是否以 < 开头 (HTML tag)
+	size_t firstChar = response.find_first_not_of(" \t\r\n");
+	if (firstChar != std::string::npos && response[firstChar] == '<') {
+		::MessageBoxW(nppData._nppHandle, L"Google API returned HTML instead of JSON.\nPossible cause: IP blocked (Too many requests).", L"Error", MB_OK | MB_ICONERROR);
+		return;
+	}
+
+	// 7. 【核心修正】直接解析 UTF-8 的 response
+	// 不要在这里转成 GBK，因为 JSON 本身就是 UTF-8 的
+	std::string utf8TranslatedText = utilityTools.ParseGoogleTranslation(response);
+
+	if (utf8TranslatedText.empty()) {
+		// 如果解析失败，可能是格式变了，或者之前的 Parse 没找到内容
+		// 可以在这里把 response 打印出来调试
+		::MessageBoxW(nppData._nppHandle, L"Translation not found in response.", L"Parse Error", MB_OK | MB_ICONERROR);
+		return;
+	}
+
+	// 8. 处理 JSON 中的转义字符 (可选，但推荐)
+	// Google 返回的内容可能包含 \\n, \\", \\uXXXX 等。
+	// 如果需要完美显示，这里应该有一个 UnescapeJSON 函数。
+	// 但为了保持简单，我们先直接用。
+
+	// 9. 将 UTF-8 的翻译结果转换回当前文档的编码
+	std::string finalTranslatedText = utilityTools.convertStringEncoding(utf8TranslatedText, CP_UTF8, windowsCodepage);
+
+	// 10. 插入文本
+	std::string textToInsert = "\r\n" + finalTranslatedText;
+	intptr_t currentPos = ::SendMessage(hCurrentScintilla, SCI_GETCURRENTPOS, 0, 0);
+	intptr_t line = ::SendMessage(hCurrentScintilla, SCI_LINEFROMPOSITION, currentPos, 0);
+	intptr_t lineEndPos = ::SendMessage(hCurrentScintilla, SCI_GETLINEENDPOSITION, line, 0);
+
+	::SendMessage(hCurrentScintilla, SCI_INSERTTEXT, lineEndPos, (LPARAM)textToInsert.c_str());
+}
+
 
 // ==========================================
 // 内部辅助函数：简易 JSON 字符串提取
@@ -425,6 +509,15 @@ void showSettingDlg()
 	if (hSelf)
 	{
 		Logs("Calculating Center Position...");
+
+		// 加载已有配置到输入框
+		ProxyInfo currentProxy = utilityTools.GetPluginProxySettings();
+		if (currentProxy.enabled)
+		{
+			::SetDlgItemText(hSelf, IDC_EDIT_IP, currentProxy.server.c_str());
+			::SetDlgItemInt(hSelf, IDC_EDIT_PORT, currentProxy.port, FALSE);
+		}
+
 
 		// 获取 Notepad++ 主窗口的位置
 		RECT rcParent;

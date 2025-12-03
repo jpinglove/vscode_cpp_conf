@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <iostream>
 
-BOOL Logger::bIsEnable = FALSE;
+BOOL Logger::bIsEnable = TRUE;
 
 // 获取当前时间头
 std::string Logger::GetTimeHeader()

@@ -60,6 +60,16 @@ public:
 	std::string ConvertWStringToAnsi(std::wstring wstr);
 	std::string WstringToGbk(const std::wstring& wide_string);
 
+	// 【新增】保存代理设置到 setting.xml
+	bool SaveProxySettings(const std::wstring& server, const std::wstring& portStr);
+
+	// 【新增】从 setting.xml 获取代理设置 (不替换原有的 getNppUpdaterProxySettings)
+	ProxyInfo GetPluginProxySettings();
+
+private:
+	// 【新增】获取 setting.xml 的完整路径
+	std::wstring GetSettingsFilePath();
+
 };
 
 

@@ -6,6 +6,10 @@
 #include <iomanip>   // 对应 std::setw, std::hex, std::uppercase 等
 #include <ShlObj.h>     // 虽然不再用SHGetFolderPath，但保留可能有用
 #include <Shlwapi.h>    // 用于路径处理函数 PathRemoveFileSpecW, PathAppendW
+#include "Logger.h"
+
+#include <shlwapi.h> // 需要 PathRemoveFileSpecW, PathAppendW
+#pragma comment(lib, "shlwapi.lib") // 确保链接库
 
 Utility::Utility()
 {
@@ -297,6 +301,8 @@ std::string Utility::httpGetWithProxy(const std::wstring& url, const ProxyInfo& 
 // 从谷歌API响应中解析翻译结果
 // 谷歌的响应格式是这样的: [[["Hello","你好",null,null,1]],null,"zh-CN",...]
 // 我们需要提取出第一个双引号内的 "Hello"
+
+/*
 std::string Utility::ParseGoogleTranslation(const std::string& jsonResponse)
 {
 	const std::string searchKey = "[[[\"";
@@ -313,6 +319,55 @@ std::string Utility::ParseGoogleTranslation(const std::string& jsonResponse)
 
 	return jsonResponse.substr(startPos, endPos - startPos);
 }
+*/
+// ============================================================================
+//   *** 修复版: 支持转义引号的解析函数 ***
+// ============================================================================
+std::string Utility::ParseGoogleTranslation(const std::string& jsonResponse)
+{
+	// 搜索 Google JSON 的特征头
+	const std::string searchKey = "[[[\"";
+	size_t startPos = jsonResponse.find(searchKey);
+	if (startPos == std::string::npos) {
+		return ""; // 返回空表示未找到
+	}
+
+	startPos += searchKey.length();
+
+	// 开始查找结束的引号，注意跳过转义的引号 (\")
+	std::string result;
+	bool escaped = false;
+
+	// 从 startPos 开始遍历，直到找到非转义的引号
+	for (size_t i = startPos; i < jsonResponse.length(); ++i) {
+		char c = jsonResponse[i];
+
+		if (escaped) {
+			// 如果上一个字符是反斜杠，这个字符就被保留（即它是内容的一部分）
+			result += c;
+			escaped = false;
+		}
+		else {
+			if (c == '\\') {
+				// 遇到反斜杠，标记为转义状态
+				// 注意：我们可能需要保留反斜杠用于后续处理，或者在这里就处理转义
+				// Google 返回的通常是字面量，保留它交给后续编码转换处理比较安全
+				result += c;
+				escaped = true;
+			}
+			else if (c == '"') {
+				// 遇到非转义的引号，说明字符串结束了
+				return result;
+			}
+			else {
+				result += c;
+			}
+		}
+	}
+
+	return ""; // 未找到闭合引号
+}
+
 
 
 // ============================================================================
@@ -537,3 +592,151 @@ std::string Utility::WstringToGbk(const std::wstring& wide_string) {
 
 	return gbk_string;
 }
+
+// ----------------------------------------------------------------------------
+// 私有辅助：获取 setting.xml 的绝对路径 (位于插件DLL同级目录)
+// ----------------------------------------------------------------------------
+std::wstring Utility::GetSettingsFilePath()
+{
+	HMODULE hModule = NULL;
+
+	// 【修改点 1】定义一个静态变量
+	// 静态变量存储在 DLL 的数据段中，其地址一定属于当前 DLL 模块范围
+	static int dummyMarker = 0;
+
+	// 【修改点 2】传入静态变量的地址，并强制转换为 LPCWSTR
+	if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+		GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+		(LPCWSTR)&dummyMarker, // 这里改用了 dummyMarker 的地址
+		&hModule))
+	{
+		WCHAR path[MAX_PATH];
+		if (GetModuleFileNameW(hModule, path, MAX_PATH) > 0)
+		{
+			// 移除文件名 (TranslateSelection.dll)，只保留目录
+			PathRemoveFileSpecW(path);
+			// 拼接配置文件名
+			PathAppendW(path, L"setting.xml");
+			return std::wstring(path);
+		}
+	}
+	return L"";
+}
+//std::wstring Utility::GetSettingsFilePath()
+//{
+//	HMODULE hModule = NULL;
+//	// 获取当前 Utility 代码所在的 DLL 模块句柄
+//	if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+//		GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+//		(LPCTSTR)&Utility::GetSettingsFilePath, &hModule))
+//	{
+//		WCHAR path[MAX_PATH];
+//		if (GetModuleFileNameW(hModule, path, MAX_PATH) > 0)
+//		{
+//			// 移除文件名 (TranslateSelection.dll)，只保留目录
+//			PathRemoveFileSpecW(path);
+//			// 拼接配置文件名
+//			PathAppendW(path, L"setting.xml");
+//			return std::wstring(path);
+//		}
+//	}
+//	return L"";
+//}
+
+
+// ----------------------------------------------------------------------------
+// 【功能 1】保存代理设置
+// 参数：宽字符的 IP 和 端口字符串 (通常直接来自 Edit 控件)
+// ----------------------------------------------------------------------------
+bool Utility::SaveProxySettings(const std::wstring& server, const std::wstring& portStr)
+{
+	std::wstring filePath = GetSettingsFilePath();
+	if (filePath.empty()) return false;
+
+	// 1. 简单校验
+	if (server.empty() || portStr.empty()) {
+		return false;
+	}
+
+	// 2. 转换为 UTF-8 (为了保存到 XML)
+	// 利用你现有的 Utf16ToUtf8 函数
+	std::string serverUtf8 = Utf16ToUtf8(server);
+	std::string portUtf8 = Utf16ToUtf8(portStr);
+
+	// 3. 构造 XML 内容
+	std::stringstream ss;
+	ss << "<Settings><Proxy><server>" << serverUtf8
+		<< "</server><port>" << portUtf8
+		<< "</port></Proxy></Settings>";
+	//std::stringstream ss;
+	//ss << "<Settings>" << std::endl;
+	//ss << "    <Proxy>" << std::endl;
+	//ss << "        <server>" << serverUtf8 << "</server>" << std::endl;
+	//ss << "        <port>" << portUtf8 << "</port>" << std::endl;
+	//ss << "    </Proxy>" << std::endl;
+	//ss << "</Settings>";
+
+	// 4. 写入文件
+	std::ofstream outFile(filePath); // 默认 ASCII/UTF-8 写入
+	if (outFile.is_open()) {
+		outFile << ss.str();
+		outFile.close();
+		return true;
+	}
+
+	return false;
+}
+
+
+// ----------------------------------------------------------------------------
+// 【功能 2】读取自定义代理设置
+// ----------------------------------------------------------------------------
+ProxyInfo Utility::GetPluginProxySettings()
+{
+	ProxyInfo proxy;
+	proxy.enabled = false;
+
+	std::wstring filePath = GetSettingsFilePath();
+	if (filePath.empty()) return proxy;
+
+	// 1. 读取文件内容
+	std::ifstream inFile(filePath);
+	if (!inFile.is_open()) return proxy;
+
+	std::stringstream buffer;
+	buffer << inFile.rdbuf();
+	std::string content = buffer.str();
+	inFile.close();
+
+	if (content.empty()) return proxy;
+
+	// 2. 解析 XML
+	// 先提取 <Proxy> 块，防止匹配到其他无关内容
+	std::string proxyBlock = extractTagValue(content, "Proxy");
+	if (proxyBlock.empty()) return proxy;
+
+	// 在 Proxy 块内提取 server 和 port
+	std::string serverUtf8 = extractTagValue(proxyBlock, "server");
+	std::string portUtf8 = extractTagValue(proxyBlock, "port");
+
+	// 3. 填充结构体
+	if (!serverUtf8.empty() && !portUtf8.empty()) {
+		// UTF-8 string -> wstring (server)
+		proxy.server = Utf8ToUtf16(serverUtf8);
+
+		// string -> int (port)
+		try {
+			int port = std::stoi(portUtf8);
+			if (port > 0 && port <= 65535) {
+				proxy.port = (INTERNET_PORT)port;
+				proxy.enabled = true; // 只有解析成功才启用
+			}
+		}
+		catch (...) {
+			proxy.enabled = false;
+		}
+	}
+
+	return proxy;
+}
+
